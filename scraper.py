@@ -34,7 +34,11 @@ SUBREDDITS = [
     ('TwinFalls',           42.5630, -114.4618),
     ('Pocatello',           42.8713, -112.4455),
     ('LewisClarknorthwest', 46.4165, -117.0177),
-    ('SandpointIdaho',      48.2766, -116.5535),
+    ('Sandpoint',           48.2766, -116.5535),
+    ('MoscowIdaho',         46.7324, -117.0002),
+    ('TwinFallsIdaho',      42.5630, -114.4618),
+    ('PocatelloIdaho',      42.8713, -112.4455),
+    ('IdahoFalls',          43.4917, -112.0408),
 ]
 
 # Must match at least one of these (whole-word or phrase matched)
@@ -46,7 +50,9 @@ KEYWORDS = ['homeless','encampment','tent city','tent camp','vagrant',
 # Exclude posts containing these — catches false positives
 EXCLUDE_KEYWORDS = ['campaign','primary','republican','democrat','election',
                     'camp fire','camp site','campsite','camping trip','summer camp',
-                    'camp david','transient ischemic','transit','transistor']
+                    'camp david','transient ischemic','transit','transistor','transgender',
+                    'charity event','donation','fundrais','food drive','volunteer',
+                    '5k','fun run','walk to end','run to end','gala','benefit dinner']
 
 def is_homeless_related(text):
     t = text.lower()
@@ -60,50 +66,65 @@ def is_homeless_related(text):
 def scrape_reddit():
     print("Scraping Reddit...")
     results = []
-    cutoff = datetime.now() - timedelta(days=30)
+    cutoff = datetime(2025, 1, 1)
     for sub, lat, lng in SUBREDDITS:
-        q = urllib.parse.quote('homeless OR encampment OR "tent city" OR transient')
-        url = f"https://www.reddit.com/r/{sub}/search.json?q={q}&restrict_sr=1&sort=new&limit=25"
-        raw = fetch(url, delay=2.5)
-        if not raw:
-            continue
-        try:
-            posts = json.loads(raw).get('data', {}).get('children', [])
-        except:
-            continue
-        for post in posts:
-            p = post.get('data', {})
-            title = p.get('title', '')
-            created = datetime.fromtimestamp(p.get('created_utc', 0))
-            score = p.get('score', 0)
-            if created < cutoff or score < 2:
+        # Pull both /new and search to maximize coverage
+        urls = [
+            f"https://www.reddit.com/r/{sub}/new.json?limit=100",
+            f"https://www.reddit.com/r/{sub}/search.json?q={urllib.parse.quote('homeless OR encampment OR \"tent city\" OR \"sleeping outside\"')}&restrict_sr=1&sort=new&limit=25",
+        ]
+        posts_seen = set()
+        for url in urls:
+            raw = fetch(url, delay=2)
+            if not raw:
                 continue
-            if not is_homeless_related(title + ' ' + p.get('selftext','')):
+            try:
+                posts = json.loads(raw).get('data', {}).get('children', [])
+            except:
                 continue
-            results.append({
-                'type': 'reddit',
-                'lat': round(lat + random.uniform(-0.04, 0.04), 4),
-                'lng': round(lng + random.uniform(-0.04, 0.04), 4),
-                'title': f"r/{sub}",
-                'desc': title[:200],
-                'date': created.strftime('%Y-%m-%d'),
-                'source': f"r/{sub}",
-                'url': 'https://reddit.com' + p.get('permalink', ''),
-                'score': score
-            })
-            print(f"  [r/{sub}] {title[:60]}")
+            for post in posts:
+                p = post.get('data', {})
+                pid = p.get('id','')
+                if pid in posts_seen:
+                    continue
+                posts_seen.add(pid)
+                title = p.get('title', '')
+                selftext = p.get('selftext', '')
+                created = datetime.fromtimestamp(p.get('created_utc', 0))
+                score = p.get('score', 0)
+                if created < cutoff or score < 5:
+                    continue
+                if not is_homeless_related(title + ' ' + selftext):
+                    continue
+                results.append({
+                    'type': 'reddit',
+                    'lat': round(lat + random.uniform(-0.04, 0.04), 4),
+                    'lng': round(lng + random.uniform(-0.04, 0.04), 4),
+                    'title': f"r/{sub}",
+                    'desc': title[:200],
+                    'date': created.strftime('%Y-%m-%d'),
+                    'source': f"r/{sub}",
+                    'url': 'https://reddit.com' + p.get('permalink', ''),
+                    'score': score
+                })
+                print(f"  [r/{sub}] {title[:60]}")
     print(f"  → {len(results)} Reddit posts")
     return results
 
 # ── NEWS RSS ──────────────────────────────────────────────────────────────────
 
 NEWS_FEEDS = [
-    ('KTVB (Boise)',        'https://www.ktvb.com/feeds/syndication/rss/news',                       43.6150, -116.2023),
-    ('KIVI (Boise)',        'https://kivitv.com/news.rss',                                           43.6150, -116.2023),
-    ('East Idaho News',     'https://eastidahonews.com/feed',                                        43.4917, -112.0408),
-    ('Magic Valley TN',     'https://magicvalley.com/search/?q=homeless&template=rss',               42.5630, -114.4618),
-    ('Idaho State Journal', 'https://www.idahostatejournal.com/search/?q=homeless&template=rss',     42.8713, -112.4455),
-    ('Post Register',       'https://www.postregister.com/search/?q=homeless&template=rss',          43.4917, -112.0408),
+    ('KTVB (Boise)',        'https://www.ktvb.com/feeds/syndication/rss/news',                                           43.6150, -116.2023),
+    ('KIVI (Boise)',        'https://kivitv.com/news.rss',                                                               43.6150, -116.2023),
+    ('East Idaho News',     'https://eastidahonews.com/feed',                                                            43.4917, -112.0408),
+    ('Magic Valley TN',     'https://magicvalley.com/search/?q=homeless&template=rss',                                   42.5630, -114.4618),
+    ('Idaho State Journal', 'https://www.idahostatejournal.com/search/?q=homeless&template=rss',                         42.8713, -112.4455),
+    ('Post Register',       'https://www.postregister.com/search/?q=homeless&template=rss',                              43.4917, -112.0408),
+    # Google News RSS — searches all Idaho news sources
+    ('Google News: Idaho homeless',   'https://news.google.com/rss/search?q=homeless+Idaho&hl=en-US&gl=US&ceid=US:en',  44.0682, -114.7420),
+    ('Google News: Idaho encampment', 'https://news.google.com/rss/search?q=encampment+Idaho&hl=en-US&gl=US&ceid=US:en',44.0682, -114.7420),
+    ('Google News: Boise homeless',   'https://news.google.com/rss/search?q=homeless+Boise+Idaho&hl=en-US&gl=US&ceid=US:en', 43.6150, -116.2023),
+    ('Google News: CdA homeless',     'https://news.google.com/rss/search?q=homeless+"Coeur+d%27Alene"&hl=en-US&gl=US&ceid=US:en', 47.6741, -116.7800),
 ]
 
 def extract_items(xml, source, lat, lng):
@@ -115,7 +136,7 @@ def extract_items(xml, source, lat, lng):
             continue
         try:
             pub = datetime.strptime(date_s[:25], '%a, %d %b %Y %H:%M:%S')
-            if pub < datetime.now() - timedelta(days=45): continue
+            if pub < datetime(2025, 1, 1): continue
             date_out = pub.strftime('%Y-%m-%d')
         except:
             date_out = datetime.now().strftime('%Y-%m-%d')
