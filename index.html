@@ -230,8 +230,73 @@
   .incident-date { font-size: 10px; color: var(--muted); margin-top: 6px; }
   .incident-source { font-size: 10px; color: var(--muted); }
 
-  /* Search bar */
-  .search-wrap { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  /* ── MOBILE ─────────────────────────────────────────────────────────────── */
+  @media (max-width: 700px) {
+    header {
+      padding: 8px 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .logo-text { font-size: 15px; letter-spacing: 1px; }
+    .logo-sub { display: none; }
+    .logo-mark { width: 28px; height: 28px; font-size: 11px; }
+    .header-stats { gap: 10px; flex-wrap: wrap; }
+    .hstat-val { font-size: 16px; }
+    .hstat-label { font-size: 9px; }
+    .updated { display: none; }
+
+    .app-body { flex-direction: column; }
+
+    /* Sidebar becomes a bottom sheet */
+    .sidebar {
+      width: 100%;
+      height: auto;
+      max-height: 45vh;
+      border-right: none;
+      border-top: 2px solid var(--accent);
+      order: 2;
+      flex-shrink: 0;
+    }
+
+    /* Sidebar content scrolls horizontally on mobile for layers */
+    .sidebar-section {
+      padding: 10px 12px;
+    }
+    .layer-toggle { margin-bottom: 6px; }
+    .layer-name { font-size: 12px; }
+
+    /* Map takes full remaining height */
+    #map { min-height: 55vh; height: 55vh; }
+    .map-wrap { order: 1; flex: 1; }
+
+    /* Legend smaller on mobile */
+    .legend {
+      bottom: 8px;
+      right: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+    .legend-title { font-size: 9px; }
+    .legend-row { font-size: 10px; margin-bottom: 3px; }
+
+    /* County list shorter */
+    .county-list { max-height: 120px; }
+
+    /* Bigger touch targets */
+    .county-item { padding: 11px 12px; }
+    .toggle-switch { width: 40px; height: 22px; }
+    .toggle-switch::after { width: 16px; height: 16px; top: 3px; }
+    .toggle-switch.on::after { left: 21px; }
+
+    /* Sort buttons */
+    .sort-btn { font-size: 10px; padding: 5px 4px; }
+
+    /* Popup fits mobile screen */
+    .leaflet-popup-content { min-width: 180px; max-width: 260px; }
+    .popup-county { font-size: 15px; }
+    .popup-val { font-size: 13px; }
+  }
+ padding: 10px 16px; border-bottom: 1px solid var(--border); }
   .search-input {
     width: 100%;
     background: var(--bg);
@@ -324,7 +389,7 @@
     <div class="county-list" id="county-list"></div>
   </div>
 
-  <div style="position:relative;flex:1;height:100%;">
+  <div class="map-wrap" style="position:relative;flex:1;height:100%;">
     <div id="map" style="width:100%;height:100%;"></div>
     <div class="legend">
       <div class="legend-title">PIT Count</div>
@@ -351,12 +416,14 @@ const COUNTY_DATA = {"Ada":{"pit":772,"sheltered":646,"unsheltered":126,"student
 // Populated by loadIncidents() from data/incidents.json (scraper output)
 
 // ── MAP SETUP ────────────────────────────────────────────────────────────────
+const isMobile = window.innerWidth <= 700;
 const map = L.map('map', {
   center: [44.5, -114.5],
-  zoom: 6,
-  zoomControl: true,
+  zoom: isMobile ? 5 : 6,
+  zoomControl: !isMobile,
   preferCanvas: true
 });
+if (isMobile) L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -443,13 +510,14 @@ fetch('data/counties.json')
 
 // ── INCIDENT PINS ────────────────────────────────────────────────────────────
 function makeIcon(type) {
-  const colors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2' };
-  const shapes = { camp: '50%', arrest: '3px', reddit: '50%' };
-  const sizes = { camp: 14, arrest: 12, reddit: 12 };
-  const s = sizes[type];
+  const colors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2', news: '#c9a84c' };
+  const shapes = { camp: '50%', arrest: '3px', reddit: '50%', news: '3px' };
+  const sizes = { camp: 14, arrest: 12, reddit: 12, news: 12 };
+  const t = colors[type] ? type : 'news';
+  const s = sizes[t];
   return L.divIcon({
     className: '',
-    html: `<div style="width:${s}px;height:${s}px;background:${colors[type]};border-radius:${shapes[type]};border:2px solid rgba(255,255,255,0.3);box-shadow:0 2px 6px rgba(0,0,0,0.6)"></div>`,
+    html: `<div style="width:${s}px;height:${s}px;background:${colors[t]};border-radius:${shapes[t]};border:2px solid rgba(255,255,255,0.3);box-shadow:0 2px 6px rgba(0,0,0,0.6)"></div>`,
     iconSize: [s, s],
     iconAnchor: [s/2, s/2]
   });
