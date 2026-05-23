@@ -508,8 +508,10 @@
       <form id="report-form" action="https://formspree.io/f/xgoqzpza" method="POST" onsubmit="handleReportSubmit(event)">
         <div class="form-group">
           <label class="form-label">Camp Location *</label>
-          <input class="form-input" type="text" name="location" placeholder="e.g. Under I-84 overpass near Garrity Blvd, Nampa" required>
-          <div class="form-note">Be as specific as possible — street address, landmark, or intersection.</div>
+          <input class="form-input" type="text" name="location" id="report-location" placeholder="e.g. Under I-84 overpass near Garrity Blvd, Nampa" required>
+          <input type="hidden" name="latitude" id="report-lat">
+          <input type="hidden" name="longitude" id="report-lng">
+          <div class="form-note">Street address, landmark, or intersection. <strong style="color:var(--accent)">To drop a pin:</strong> open Google Maps, long-press the exact location, then copy the coordinates (e.g. 43.6150, -116.2023) and paste them here.</div>
         </div>
         <div class="form-group">
           <label class="form-label">City / County *</label>
@@ -928,6 +930,8 @@ renderCountyList();
 // ── MODALS ────────────────────────────────────────────────────────────────────
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
