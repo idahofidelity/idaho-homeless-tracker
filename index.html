@@ -270,7 +270,7 @@
   <div class="header-stats">
     <div class="hstat">
       <div class="hstat-val" id="hstat-total">—</div>
-      <div class="hstat-label">Total (PIT 2024)</div>
+      <div class="hstat-label">Total (PIT 2025)</div>
     </div>
     <div class="hstat">
       <div class="hstat-val" id="hstat-unsheltered">—</div>
@@ -345,52 +345,7 @@
 
 <script>
 // ── DATA ─────────────────────────────────────────────────────────────────────
-const COUNTY_DATA = {
-  "Ada":{"pit":789,"sheltered":512,"unsheltered":277,"students":1842,"shelters":8,"spending_millions":12.4,"city":"Boise"},
-  "Canyon":{"pit":187,"sheltered":98,"unsheltered":89,"students":643,"shelters":3,"spending_millions":3.1,"city":"Nampa"},
-  "Kootenai":{"pit":142,"sheltered":71,"unsheltered":71,"students":398,"shelters":4,"spending_millions":2.8,"city":"Coeur d'Alene"},
-  "Bannock":{"pit":98,"sheltered":61,"unsheltered":37,"students":287,"shelters":2,"spending_millions":1.9,"city":"Pocatello"},
-  "Bonneville":{"pit":76,"sheltered":45,"unsheltered":31,"students":312,"shelters":2,"spending_millions":1.4,"city":"Idaho Falls"},
-  "Twin Falls":{"pit":64,"sheltered":38,"unsheltered":26,"students":198,"shelters":3,"spending_millions":1.2,"city":"Twin Falls"},
-  "Blaine":{"pit":41,"sheltered":22,"unsheltered":19,"students":87,"shelters":1,"spending_millions":0.9,"city":"Hailey"},
-  "Nez Perce":{"pit":38,"sheltered":24,"unsheltered":14,"students":143,"shelters":2,"spending_millions":0.7,"city":"Lewiston"},
-  "Latah":{"pit":29,"sheltered":18,"unsheltered":11,"students":112,"shelters":1,"spending_millions":0.5,"city":"Moscow"},
-  "Bonner":{"pit":31,"sheltered":14,"unsheltered":17,"students":94,"shelters":1,"spending_millions":0.6,"city":"Sandpoint"},
-  "Madison":{"pit":22,"sheltered":15,"unsheltered":7,"students":89,"shelters":1,"spending_millions":0.4,"city":"Rexburg"},
-  "Bingham":{"pit":18,"sheltered":10,"unsheltered":8,"students":76,"shelters":1,"spending_millions":0.3,"city":"Blackfoot"},
-  "Jerome":{"pit":11,"sheltered":6,"unsheltered":5,"students":44,"shelters":0,"spending_millions":0.2,"city":"Jerome"},
-  "Elmore":{"pit":11,"sheltered":5,"unsheltered":6,"students":41,"shelters":0,"spending_millions":0.2,"city":"Mountain Home"},
-  "Shoshone":{"pit":15,"sheltered":6,"unsheltered":9,"students":48,"shelters":0,"spending_millions":0.2,"city":"Wallace"},
-  "Cassia":{"pit":12,"sheltered":7,"unsheltered":5,"students":52,"shelters":1,"spending_millions":0.2,"city":"Burley"},
-  "Jefferson":{"pit":8,"sheltered":4,"unsheltered":4,"students":33,"shelters":0,"spending_millions":0.1,"city":"Rigby"},
-  "Gooding":{"pit":9,"sheltered":5,"unsheltered":4,"students":37,"shelters":0,"spending_millions":0.1,"city":"Gooding"},
-  "Fremont":{"pit":7,"sheltered":3,"unsheltered":4,"students":28,"shelters":0,"spending_millions":0.1,"city":"St. Anthony"},
-  "Clearwater":{"pit":6,"sheltered":3,"unsheltered":3,"students":22,"shelters":0,"spending_millions":0.1,"city":"Orofino"},
-  "Idaho":{"pit":8,"sheltered":3,"unsheltered":5,"students":24,"shelters":0,"spending_millions":0.1,"city":"Grangeville"},
-  "Gem":{"pit":5,"sheltered":2,"unsheltered":3,"students":16,"shelters":0,"spending_millions":0.1,"city":"Emmett"},
-  "Payette":{"pit":6,"sheltered":3,"unsheltered":3,"students":21,"shelters":0,"spending_millions":0.1,"city":"Payette"},
-  "Boundary":{"pit":7,"sheltered":3,"unsheltered":4,"students":19,"shelters":0,"spending_millions":0.1,"city":"Bonners Ferry"},
-  "Benewah":{"pit":5,"sheltered":2,"unsheltered":3,"students":14,"shelters":0,"spending_millions":0.1,"city":"St. Maries"},
-  "Minidoka":{"pit":7,"sheltered":3,"unsheltered":4,"students":28,"shelters":0,"spending_millions":0.1,"city":"Rupert"},
-  "Teton":{"pit":6,"sheltered":3,"unsheltered":3,"students":18,"shelters":0,"spending_millions":0.1,"city":"Driggs"},
-  "Valley":{"pit":5,"sheltered":2,"unsheltered":3,"students":13,"shelters":0,"spending_millions":0.08,"city":"Cascade"},
-  "Washington":{"pit":4,"sheltered":2,"unsheltered":2,"students":12,"shelters":0,"spending_millions":0.06,"city":"Weiser"},
-  "Power":{"pit":5,"sheltered":2,"unsheltered":3,"students":14,"shelters":0,"spending_millions":0.08,"city":"American Falls"},
-  "Lemhi":{"pit":5,"sheltered":2,"unsheltered":3,"students":11,"shelters":0,"spending_millions":0.08,"city":"Salmon"},
-  "Custer":{"pit":4,"sheltered":1,"unsheltered":3,"students":7,"shelters":0,"spending_millions":0.05,"city":"Challis"},
-  "Owyhee":{"pit":4,"sheltered":1,"unsheltered":3,"students":12,"shelters":0,"spending_millions":0.06,"city":"Murphy"},
-  "Adams":{"pit":3,"sheltered":1,"unsheltered":2,"students":8,"shelters":0,"spending_millions":0.05,"city":"Council"},
-  "Caribou":{"pit":3,"sheltered":1,"unsheltered":2,"students":9,"shelters":0,"spending_millions":0.05,"city":"Soda Springs"},
-  "Franklin":{"pit":3,"sheltered":1,"unsheltered":2,"students":11,"shelters":0,"spending_millions":0.05,"city":"Preston"},
-  "Lincoln":{"pit":3,"sheltered":1,"unsheltered":2,"students":8,"shelters":0,"spending_millions":0.05,"city":"Shoshone"},
-  "Oneida":{"pit":2,"sheltered":1,"unsheltered":1,"students":5,"shelters":0,"spending_millions":0.03,"city":"Malad City"},
-  "Bear Lake":{"pit":2,"sheltered":1,"unsheltered":1,"students":7,"shelters":0,"spending_millions":0.03,"city":"Paris"},
-  "Lewis":{"pit":2,"sheltered":1,"unsheltered":1,"students":6,"shelters":0,"spending_millions":0.03,"city":"Nezperce"},
-  "Boise":{"pit":2,"sheltered":1,"unsheltered":1,"students":6,"shelters":0,"spending_millions":0.05,"city":"Idaho City"},
-  "Butte":{"pit":2,"sheltered":1,"unsheltered":1,"students":5,"shelters":0,"spending_millions":0.05,"city":"Arco"},
-  "Camas":{"pit":1,"sheltered":0,"unsheltered":1,"students":3,"shelters":0,"spending_millions":0.02,"city":"Fairfield"},
-  "Clark":{"pit":0,"sheltered":0,"unsheltered":0,"students":1,"shelters":0,"spending_millions":0,"city":"Dubois"}
-};
+const COUNTY_DATA = {"Ada":{"pit":772,"sheltered":646,"unsheltered":126,"students":1842,"shelters":8,"spending_millions":12.4,"city":"Boise"},"Canyon":{"pit":578,"sheltered":57,"unsheltered":521,"students":643,"shelters":3,"spending_millions":3.1,"city":"Nampa"},"Kootenai":{"pit":169,"sheltered":70,"unsheltered":99,"students":398,"shelters":4,"spending_millions":2.8,"city":"Coeur d'Alene"},"Twin Falls":{"pit":163,"sheltered":148,"unsheltered":15,"students":198,"shelters":3,"spending_millions":1.2,"city":"Twin Falls"},"Bannock":{"pit":62,"sheltered":28,"unsheltered":34,"students":287,"shelters":2,"spending_millions":1.9,"city":"Pocatello"},"Bonneville":{"pit":61,"sheltered":51,"unsheltered":10,"students":312,"shelters":2,"spending_millions":1.4,"city":"Idaho Falls"},"Nez Perce":{"pit":81,"sheltered":12,"unsheltered":69,"students":143,"shelters":2,"spending_millions":0.7,"city":"Lewiston"},"Latah":{"pit":79,"sheltered":12,"unsheltered":67,"students":112,"shelters":1,"spending_millions":0.5,"city":"Moscow"},"Elmore":{"pit":68,"sheltered":7,"unsheltered":61,"students":41,"shelters":0,"spending_millions":0.2,"city":"Mountain Home"},"Payette":{"pit":58,"sheltered":6,"unsheltered":52,"students":21,"shelters":0,"spending_millions":0.1,"city":"Payette"},"Blaine":{"pit":42,"sheltered":38,"unsheltered":4,"students":87,"shelters":1,"spending_millions":0.9,"city":"Hailey"},"Gem":{"pit":45,"sheltered":4,"unsheltered":41,"students":16,"shelters":0,"spending_millions":0.1,"city":"Emmett"},"Bonner":{"pit":44,"sheltered":18,"unsheltered":26,"students":94,"shelters":1,"spending_millions":0.6,"city":"Sandpoint"},"Jerome":{"pit":43,"sheltered":39,"unsheltered":4,"students":44,"shelters":0,"spending_millions":0.2,"city":"Jerome"},"Cassia":{"pit":43,"sheltered":39,"unsheltered":4,"students":52,"shelters":1,"spending_millions":0.2,"city":"Burley"},"Minidoka":{"pit":38,"sheltered":35,"unsheltered":3,"students":28,"shelters":0,"spending_millions":0.1,"city":"Rupert"},"Idaho":{"pit":32,"sheltered":5,"unsheltered":27,"students":24,"shelters":0,"spending_millions":0.1,"city":"Grangeville"},"Bingham":{"pit":32,"sheltered":14,"unsheltered":18,"students":76,"shelters":1,"spending_millions":0.3,"city":"Blackfoot"},"Owyhee":{"pit":28,"sheltered":3,"unsheltered":25,"students":12,"shelters":0,"spending_millions":0.06,"city":"Murphy"},"Valley":{"pit":28,"sheltered":3,"unsheltered":25,"students":13,"shelters":0,"spending_millions":0.08,"city":"Cascade"},"Gooding":{"pit":27,"sheltered":25,"unsheltered":2,"students":37,"shelters":0,"spending_millions":0.1,"city":"Gooding"},"Washington":{"pit":25,"sheltered":2,"unsheltered":23,"students":12,"shelters":0,"spending_millions":0.06,"city":"Weiser"},"Madison":{"pit":20,"sheltered":17,"unsheltered":3,"students":89,"shelters":1,"spending_millions":0.4,"city":"Rexburg"},"Boise":{"pit":18,"sheltered":2,"unsheltered":16,"students":6,"shelters":0,"spending_millions":0.05,"city":"Idaho City"},"Clearwater":{"pit":17,"sheltered":3,"unsheltered":14,"students":22,"shelters":0,"spending_millions":0.1,"city":"Orofino"},"Jefferson":{"pit":15,"sheltered":12,"unsheltered":3,"students":33,"shelters":0,"spending_millions":0.1,"city":"Rigby"},"Boundary":{"pit":12,"sheltered":5,"unsheltered":7,"students":19,"shelters":0,"spending_millions":0.1,"city":"Bonners Ferry"},"Shoshone":{"pit":12,"sheltered":5,"unsheltered":7,"students":48,"shelters":0,"spending_millions":0.2,"city":"Wallace"},"Adams":{"pit":10,"sheltered":1,"unsheltered":9,"students":8,"shelters":0,"spending_millions":0.05,"city":"Council"},"Lincoln":{"pit":10,"sheltered":9,"unsheltered":1,"students":8,"shelters":0,"spending_millions":0.05,"city":"Shoshone"},"Franklin":{"pit":10,"sheltered":5,"unsheltered":5,"students":11,"shelters":0,"spending_millions":0.05,"city":"Preston"},"Benewah":{"pit":9,"sheltered":4,"unsheltered":5,"students":14,"shelters":0,"spending_millions":0.1,"city":"St. Maries"},"Lewis":{"pit":8,"sheltered":2,"unsheltered":6,"students":6,"shelters":0,"spending_millions":0.03,"city":"Nezperce"},"Fremont":{"pit":7,"sheltered":6,"unsheltered":1,"students":28,"shelters":0,"spending_millions":0.1,"city":"St. Anthony"},"Power":{"pit":6,"sheltered":3,"unsheltered":3,"students":14,"shelters":0,"spending_millions":0.08,"city":"American Falls"},"Teton":{"pit":6,"sheltered":5,"unsheltered":1,"students":18,"shelters":0,"spending_millions":0.1,"city":"Driggs"},"Caribou":{"pit":5,"sheltered":2,"unsheltered":3,"students":9,"shelters":0,"spending_millions":0.05,"city":"Soda Springs"},"Bear Lake":{"pit":5,"sheltered":2,"unsheltered":3,"students":7,"shelters":0,"spending_millions":0.03,"city":"Paris"},"Lemhi":{"pit":4,"sheltered":3,"unsheltered":1,"students":11,"shelters":0,"spending_millions":0.08,"city":"Salmon"},"Oneida":{"pit":3,"sheltered":1,"unsheltered":2,"students":5,"shelters":0,"spending_millions":0.03,"city":"Malad City"},"Camas":{"pit":2,"sheltered":2,"unsheltered":0,"students":3,"shelters":0,"spending_millions":0.02,"city":"Fairfield"},"Custer":{"pit":2,"sheltered":2,"unsheltered":0,"students":7,"shelters":0,"spending_millions":0.05,"city":"Challis"},"Clark":{"pit":1,"sheltered":1,"unsheltered":0,"students":1,"shelters":0,"spending_millions":0,"city":"Dubois"},"Butte":{"pit":1,"sheltered":1,"unsheltered":0,"students":5,"shelters":0,"spending_millions":0.05,"city":"Arco"}};
 
 // ── INCIDENT PIN BUILDER ─────────────────────────────────────────────────────
 // Populated by loadIncidents() from data/incidents.json (scraper output)
