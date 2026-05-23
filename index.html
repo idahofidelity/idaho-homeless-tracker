@@ -320,6 +320,114 @@
     transition: all 0.15s; font-family: 'Oswald', sans-serif; letter-spacing: 1px;
   }
   .sort-btn:hover, .sort-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  /* About bar */
+  .about-bar {
+    background: #1a2235;
+    border-bottom: 1px solid var(--border);
+    padding: 7px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--muted);
+    gap: 12px;
+  }
+  .about-bar-text { flex: 1; line-height: 1.5; }
+  .about-bar-text strong { color: var(--accent); }
+  .about-bar-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-small {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-small:hover { background: var(--accent); color: #000; }
+  .btn-small.primary { background: var(--accent); color: #000; }
+  .btn-small.primary:hover { background: #e0b85c; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title { font-family: 'Oswald', sans-serif; font-size: 18px; letter-spacing: 1px; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 20px; }
+  .modal-body p { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 12px; }
+  .modal-body h4 { font-family: 'Oswald', sans-serif; font-size: 13px; letter-spacing: 1px; color: var(--accent); margin: 16px 0 6px; }
+
+  /* Report form */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 11px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 5px; font-family: 'Oswald', sans-serif; }
+  .form-input, .form-textarea, .form-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Source Serif 4', serif;
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+  .form-textarea { min-height: 80px; resize: vertical; }
+  .form-select option { background: var(--panel); }
+  .form-note { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .form-submit {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 6px;
+  }
+  .form-submit:hover { background: #e0b85c; }
+  .form-success { text-align: center; padding: 20px; color: #4ade80; font-family: 'Oswald', sans-serif; font-size: 16px; }
+
+  @media (max-width: 700px) {
+    .about-bar { padding: 6px 10px; font-size: 11px; flex-wrap: wrap; }
+    .about-bar-text { font-size: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -352,6 +460,106 @@
   </div>
   <div class="updated">Last scraped: <span id="last-updated">—</span></div>
 </header>
+
+
+<div class="about-bar">
+  <div class="about-bar-text">
+    <strong>Data:</strong> 2025 PIT count (Idaho Housing &amp; Finance) &nbsp;·&nbsp; McKinney-Vento student data (Idaho Dept. of Education) &nbsp;·&nbsp; News scraped weekly from Google News, KTVB, KIVI, East Idaho News &amp; Reddit &nbsp;·&nbsp; County PIT for regions 1–6 are population-weighted estimates; Ada County is an exact count.
+  </div>
+  <div class="about-bar-actions">
+    <button class="btn-small" onclick="openModal('about-modal')">ⓘ About</button>
+    <button class="btn-small primary" onclick="openModal('report-modal')">📍 Report a Camp</button>
+  </div>
+</div>
+
+<!-- About Modal -->
+<div class="modal-overlay" id="about-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ABOUT THIS DATA</div>
+      <button class="modal-close" onclick="closeModal('about-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <h4>PIT Count</h4>
+      <p>The Point-in-Time (PIT) count is a single-night snapshot conducted every January. Volunteers physically count every homeless person they can find — sheltered and unsheltered. It is required by HUD and is the official federal measure of homelessness. It is always an undercount. The 2025 count was conducted January 29, 2025.</p>
+      <h4>Unsheltered</h4>
+      <p>People sleeping in places not meant for human habitation: outside, under bridges, in tents, in abandoned buildings, or in vehicles. Vehicles count as unsheltered under HUD's definition.</p>
+      <h4>Homeless Students</h4>
+      <p>K-12 students identified as homeless by Idaho schools under the McKinney-Vento Homeless Assistance Act. This definition is broader than HUD's — it includes children doubled up with other families (couch surfing), in motels, or in transitional housing. Data from Idaho Department of Education.</p>
+      <h4>County-Level Estimates</h4>
+      <p>Idaho's PIT count is organized by 7 regions, not individual counties. Ada County (Region 7) has an exact count of 772. All other counties show population-weighted estimates derived from their regional totals. These are approximations.</p>
+      <h4>News &amp; Reddit Pins</h4>
+      <p>Incident pins are scraped weekly from Google News, KTVB, KIVI, East Idaho News, Idaho State Journal, Post Register, and Idaho-focused Reddit communities. They reflect recent reporting on homeless camps, enforcement actions, and policy news — not verified field observations.</p>
+      <h4>About This Project</h4>
+      <p>Built and maintained by the <strong style="color:var(--accent)">Idaho Fidelity Foundation</strong>. Data updated weekly. To report a known camp location, use the "Report a Camp" button.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">REPORT A CAMP</div>
+      <button class="modal-close" onclick="closeModal('report-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Submit a known homeless camp location for review. All submissions are reviewed by IFF staff before appearing on the map. Do not submit unverified rumors.</p>
+      <form id="report-form" action="https://formspree.io/f/xgoqzpza" method="POST" onsubmit="handleReportSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Camp Location *</label>
+          <input class="form-input" type="text" name="location" placeholder="e.g. Under I-84 overpass near Garrity Blvd, Nampa" required>
+          <div class="form-note">Be as specific as possible — street address, landmark, or intersection.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">City / County *</label>
+          <input class="form-input" type="text" name="city_county" placeholder="e.g. Nampa, Canyon County" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Camp Type</label>
+          <select class="form-select" name="camp_type">
+            <option value="tent">Tent / Tarp camp</option>
+            <option value="vehicle">Vehicle camp (cars/RVs)</option>
+            <option value="structure">Makeshift structure</option>
+            <option value="open">Open sleeping (no shelter)</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimated Size</label>
+          <select class="form-select" name="size">
+            <option value="1-2">1–2 individuals</option>
+            <option value="3-10">3–10 individuals</option>
+            <option value="11-25">11–25 individuals</option>
+            <option value="25+">25+ individuals</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" name="description" placeholder="Any additional details — how long it's been there, conditions, nearby landmarks, etc."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Observed</label>
+          <input class="form-input" type="date" name="date_observed">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Name (optional)</label>
+          <input class="form-input" type="text" name="reporter_name" placeholder="Anonymous if left blank">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Email (optional)</label>
+          <input class="form-input" type="email" name="email" placeholder="Only used if we need to follow up">
+        </div>
+        <div class="form-note" style="margin-bottom:14px;">All submissions are reviewed before being added to the map. Submitting false information wastes our time and yours.</div>
+        <button class="form-submit" type="submit">SUBMIT REPORT</button>
+      </form>
+      <div id="report-success" class="form-success" style="display:none;">
+        ✓ Report submitted. IFF staff will review and add to the map if verified.
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="app-body">
   <div class="sidebar">
@@ -414,11 +622,7 @@
       </div>
     </div>
   </div>
-  <div style="position:absolute;bottom:8px;left:8px;background:rgba(13,17,23,0.85);border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:10px;color:#7d8590;max-width:220px;z-index:999;line-height:1.5;">
-    <strong style="color:#c9a84c;">Data sources:</strong> Idaho Housing &amp; Finance (2025 PIT), Idaho Dept. of Education (McKinney-Vento), Google News, Reddit.<br>
-    County-level PIT counts for regions 1–6 are population-weighted estimates from regional totals. Ada County (Region 7) is an exact count.
   </div>
-</div>
 
 <script>
 // ── DATA ─────────────────────────────────────────────────────────────────────
@@ -720,6 +924,30 @@ function focusCounty(name) {
 }
 
 renderCountyList();
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function handleReportSubmit(e) {
+  e.preventDefault();
+  const form = document.getElementById('report-form');
+  fetch(form.action, {
+    method: 'POST',
+    body: new FormData(form),
+    headers: { 'Accept': 'application/json' }
+  }).then(r => {
+    if (r.ok) {
+      form.style.display = 'none';
+      document.getElementById('report-success').style.display = 'block';
+    } else {
+      alert('Submission failed. Please try again.');
+    }
+  }).catch(() => alert('Submission failed. Please check your connection.'));
+}
 </script>
 </body>
 </html>
