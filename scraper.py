@@ -3,7 +3,7 @@
 Idaho Homeless Tracker — Weekly Scraper
 Run: python scraper.py
 Output: data/incidents.json, data/housing_meta.json
-Cron (Sunday 2am): 0 2 * * 0 python C:\Users\sevans\Desktop\idaho-homeless-tracker\scraper.py
+Cron (Sunday 2am): 0 2 * * 0 python scraper.py  (run from project folder)
 """
 
 import json, time, re, os, urllib.request, urllib.parse, random
@@ -37,8 +37,25 @@ SUBREDDITS = [
     ('SandpointIdaho',      48.2766, -116.5535),
 ]
 
-KEYWORDS = ['homeless','camp','encampment','tent city','transient','vagrant',
-            'sleeping outside','panhandl','unsheltered','shelter overflow']
+# Must match at least one of these (whole-word or phrase matched)
+KEYWORDS = ['homeless','encampment','tent city','tent camp','vagrant',
+            'sleeping outside','sleeping rough','panhandl','unsheltered',
+            'shelter overflow','street camp','living in their car',
+            'living in a tent','people living outside']
+
+# Exclude posts containing these — catches false positives
+EXCLUDE_KEYWORDS = ['campaign','primary','republican','democrat','election',
+                    'camp fire','camp site','campsite','camping trip','summer camp',
+                    'camp david','transient ischemic','transit','transistor']
+
+def is_homeless_related(text):
+    t = text.lower()
+    if any(ex in t for ex in EXCLUDE_KEYWORDS):
+        return False
+    # 'camp' alone only counts if paired with homeless context words
+    if 'camp' in t and not any(kw in t for kw in ['homeless','encampment','tent','unsheltered','vagrant']):
+        return False
+    return any(kw in t for kw in KEYWORDS)
 
 def scrape_reddit():
     print("Scraping Reddit...")
@@ -61,7 +78,7 @@ def scrape_reddit():
             score = p.get('score', 0)
             if created < cutoff or score < 2:
                 continue
-            if not any(kw in (title + p.get('selftext','')).lower() for kw in KEYWORDS):
+            if not is_homeless_related(title + ' ' + p.get('selftext','')):
                 continue
             results.append({
                 'type': 'reddit',
@@ -94,7 +111,7 @@ def extract_items(xml, source, lat, lng):
     for item in re.findall(r'<item>(.*?)</item>', xml, re.DOTALL)[:20]:
         def tag(t): m = re.search(rf'<{t}[^>]*>(.*?)</{t}>', item, re.DOTALL); return re.sub(r'<[^>]+>','',m.group(1)).replace('<![CDATA[','').replace(']]>','').strip() if m else ''
         title, desc, date_s, link = tag('title'), tag('description'), tag('pubDate'), tag('link')
-        if not any(kw in (title+desc).lower() for kw in KEYWORDS):
+        if not is_homeless_related(title + ' ' + desc):
             continue
         try:
             pub = datetime.strptime(date_s[:25], '%a, %d %b %Y %H:%M:%S')
