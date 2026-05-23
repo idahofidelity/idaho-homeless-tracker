@@ -296,7 +296,7 @@
     .popup-county { font-size: 15px; }
     .popup-val { font-size: 13px; }
   }
- padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .search-wrap { padding: 10px 16px; border-bottom: 1px solid var(--border); }
   .search-input {
     width: 100%;
     background: var(--bg);
@@ -370,6 +370,10 @@
         <div class="layer-name"><div class="layer-dot" style="background:#c9a84c"></div>Arrests / Incidents</div>
         <div class="toggle-switch on" id="toggle-arrests"></div>
       </div>
+      <div class="layer-toggle" onclick="toggleLayer('news')">
+        <div class="layer-name"><div class="layer-dot" style="background:#38bdf8"></div>News Reports</div>
+        <div class="toggle-switch on" id="toggle-news"></div>
+      </div>
       <div class="layer-toggle" onclick="toggleLayer('reddit')">
         <div class="layer-name"><div class="layer-dot" style="background:#5865f2"></div>Reddit Reports</div>
         <div class="toggle-switch on" id="toggle-reddit"></div>
@@ -383,6 +387,7 @@
     <div class="sort-row">
       <div class="sort-btn active" id="sort-pit" onclick="sortCounties('pit')">PIT</div>
       <div class="sort-btn" id="sort-unsheltered" onclick="sortCounties('unsheltered')">UNSHELTERED</div>
+      <div class="sort-btn" id="sort-per_capita" onclick="sortCounties('per_capita')">PER CAPITA</div>
       <div class="sort-btn" id="sort-students" onclick="sortCounties('students')">STUDENTS</div>
     </div>
 
@@ -392,16 +397,19 @@
   <div class="map-wrap" style="position:relative;flex:1;height:100%;">
     <div id="map" style="width:100%;height:100%;"></div>
     <div class="legend">
-      <div class="legend-title">PIT Count</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#1e3a2f"></div>0 – 10</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#3d5a1e"></div>11 – 30</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#7a4f1a"></div>31 – 75</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#8b1a1a"></div>76 – 200</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#c9152a"></div>200+</div>
+      <div class="legend-title" id="legend-title">PIT Count</div>
+      <div id="legend-scale">
+        <div class="legend-row"><div class="legend-swatch" style="background:#1e3a2f"></div>0 – 10</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#3d5a1e"></div>11 – 30</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#7a4f1a"></div>31 – 75</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#8b1a1a"></div>76 – 200</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#c9152a"></div>200+</div>
+      </div>
       <div style="margin-top:10px; border-top:1px solid var(--border); padding-top:8px;">
         <div class="legend-title">Pins</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#e05c3a;border-radius:50%"></div>Camp</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#c9a84c;border-radius:2px"></div>Arrest/Incident</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#38bdf8;border-radius:2px"></div>News Report</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#5865f2;border-radius:50%"></div>Reddit Report</div>
       </div>
     </div>
@@ -410,7 +418,7 @@
 
 <script>
 // ── DATA ─────────────────────────────────────────────────────────────────────
-const COUNTY_DATA = {"Ada":{"pit":772,"sheltered":646,"unsheltered":126,"students":1842,"shelters":8,"spending_millions":12.4,"city":"Boise"},"Canyon":{"pit":578,"sheltered":57,"unsheltered":521,"students":643,"shelters":3,"spending_millions":3.1,"city":"Nampa"},"Kootenai":{"pit":169,"sheltered":70,"unsheltered":99,"students":398,"shelters":4,"spending_millions":2.8,"city":"Coeur d'Alene"},"Twin Falls":{"pit":163,"sheltered":148,"unsheltered":15,"students":198,"shelters":3,"spending_millions":1.2,"city":"Twin Falls"},"Bannock":{"pit":62,"sheltered":28,"unsheltered":34,"students":287,"shelters":2,"spending_millions":1.9,"city":"Pocatello"},"Bonneville":{"pit":61,"sheltered":51,"unsheltered":10,"students":312,"shelters":2,"spending_millions":1.4,"city":"Idaho Falls"},"Nez Perce":{"pit":81,"sheltered":12,"unsheltered":69,"students":143,"shelters":2,"spending_millions":0.7,"city":"Lewiston"},"Latah":{"pit":79,"sheltered":12,"unsheltered":67,"students":112,"shelters":1,"spending_millions":0.5,"city":"Moscow"},"Elmore":{"pit":68,"sheltered":7,"unsheltered":61,"students":41,"shelters":0,"spending_millions":0.2,"city":"Mountain Home"},"Payette":{"pit":58,"sheltered":6,"unsheltered":52,"students":21,"shelters":0,"spending_millions":0.1,"city":"Payette"},"Blaine":{"pit":42,"sheltered":38,"unsheltered":4,"students":87,"shelters":1,"spending_millions":0.9,"city":"Hailey"},"Gem":{"pit":45,"sheltered":4,"unsheltered":41,"students":16,"shelters":0,"spending_millions":0.1,"city":"Emmett"},"Bonner":{"pit":44,"sheltered":18,"unsheltered":26,"students":94,"shelters":1,"spending_millions":0.6,"city":"Sandpoint"},"Jerome":{"pit":43,"sheltered":39,"unsheltered":4,"students":44,"shelters":0,"spending_millions":0.2,"city":"Jerome"},"Cassia":{"pit":43,"sheltered":39,"unsheltered":4,"students":52,"shelters":1,"spending_millions":0.2,"city":"Burley"},"Minidoka":{"pit":38,"sheltered":35,"unsheltered":3,"students":28,"shelters":0,"spending_millions":0.1,"city":"Rupert"},"Idaho":{"pit":32,"sheltered":5,"unsheltered":27,"students":24,"shelters":0,"spending_millions":0.1,"city":"Grangeville"},"Bingham":{"pit":32,"sheltered":14,"unsheltered":18,"students":76,"shelters":1,"spending_millions":0.3,"city":"Blackfoot"},"Owyhee":{"pit":28,"sheltered":3,"unsheltered":25,"students":12,"shelters":0,"spending_millions":0.06,"city":"Murphy"},"Valley":{"pit":28,"sheltered":3,"unsheltered":25,"students":13,"shelters":0,"spending_millions":0.08,"city":"Cascade"},"Gooding":{"pit":27,"sheltered":25,"unsheltered":2,"students":37,"shelters":0,"spending_millions":0.1,"city":"Gooding"},"Washington":{"pit":25,"sheltered":2,"unsheltered":23,"students":12,"shelters":0,"spending_millions":0.06,"city":"Weiser"},"Madison":{"pit":20,"sheltered":17,"unsheltered":3,"students":89,"shelters":1,"spending_millions":0.4,"city":"Rexburg"},"Boise":{"pit":18,"sheltered":2,"unsheltered":16,"students":6,"shelters":0,"spending_millions":0.05,"city":"Idaho City"},"Clearwater":{"pit":17,"sheltered":3,"unsheltered":14,"students":22,"shelters":0,"spending_millions":0.1,"city":"Orofino"},"Jefferson":{"pit":15,"sheltered":12,"unsheltered":3,"students":33,"shelters":0,"spending_millions":0.1,"city":"Rigby"},"Boundary":{"pit":12,"sheltered":5,"unsheltered":7,"students":19,"shelters":0,"spending_millions":0.1,"city":"Bonners Ferry"},"Shoshone":{"pit":12,"sheltered":5,"unsheltered":7,"students":48,"shelters":0,"spending_millions":0.2,"city":"Wallace"},"Adams":{"pit":10,"sheltered":1,"unsheltered":9,"students":8,"shelters":0,"spending_millions":0.05,"city":"Council"},"Lincoln":{"pit":10,"sheltered":9,"unsheltered":1,"students":8,"shelters":0,"spending_millions":0.05,"city":"Shoshone"},"Franklin":{"pit":10,"sheltered":5,"unsheltered":5,"students":11,"shelters":0,"spending_millions":0.05,"city":"Preston"},"Benewah":{"pit":9,"sheltered":4,"unsheltered":5,"students":14,"shelters":0,"spending_millions":0.1,"city":"St. Maries"},"Lewis":{"pit":8,"sheltered":2,"unsheltered":6,"students":6,"shelters":0,"spending_millions":0.03,"city":"Nezperce"},"Fremont":{"pit":7,"sheltered":6,"unsheltered":1,"students":28,"shelters":0,"spending_millions":0.1,"city":"St. Anthony"},"Power":{"pit":6,"sheltered":3,"unsheltered":3,"students":14,"shelters":0,"spending_millions":0.08,"city":"American Falls"},"Teton":{"pit":6,"sheltered":5,"unsheltered":1,"students":18,"shelters":0,"spending_millions":0.1,"city":"Driggs"},"Caribou":{"pit":5,"sheltered":2,"unsheltered":3,"students":9,"shelters":0,"spending_millions":0.05,"city":"Soda Springs"},"Bear Lake":{"pit":5,"sheltered":2,"unsheltered":3,"students":7,"shelters":0,"spending_millions":0.03,"city":"Paris"},"Lemhi":{"pit":4,"sheltered":3,"unsheltered":1,"students":11,"shelters":0,"spending_millions":0.08,"city":"Salmon"},"Oneida":{"pit":3,"sheltered":1,"unsheltered":2,"students":5,"shelters":0,"spending_millions":0.03,"city":"Malad City"},"Camas":{"pit":2,"sheltered":2,"unsheltered":0,"students":3,"shelters":0,"spending_millions":0.02,"city":"Fairfield"},"Custer":{"pit":2,"sheltered":2,"unsheltered":0,"students":7,"shelters":0,"spending_millions":0.05,"city":"Challis"},"Clark":{"pit":1,"sheltered":1,"unsheltered":0,"students":1,"shelters":0,"spending_millions":0,"city":"Dubois"},"Butte":{"pit":1,"sheltered":1,"unsheltered":0,"students":5,"shelters":0,"spending_millions":0.05,"city":"Arco"}};
+const COUNTY_DATA = {"Ada":{"pit":772,"sheltered":646,"unsheltered":126,"students":1842,"shelters":8,"spending_millions":12.4,"city":"Boise","population":482000,"per_capita":1.6},"Canyon":{"pit":578,"sheltered":57,"unsheltered":521,"students":643,"shelters":3,"spending_millions":3.1,"city":"Nampa","population":230000,"per_capita":2.51},"Kootenai":{"pit":169,"sheltered":70,"unsheltered":99,"students":398,"shelters":4,"spending_millions":2.8,"city":"Coeur d'Alene","population":180000,"per_capita":0.94},"Twin Falls":{"pit":163,"sheltered":148,"unsheltered":15,"students":198,"shelters":3,"spending_millions":1.2,"city":"Twin Falls","population":90000,"per_capita":1.81},"Bannock":{"pit":62,"sheltered":28,"unsheltered":34,"students":287,"shelters":2,"spending_millions":1.9,"city":"Pocatello","population":88000,"per_capita":0.7},"Bonneville":{"pit":61,"sheltered":51,"unsheltered":10,"students":312,"shelters":2,"spending_millions":1.4,"city":"Idaho Falls","population":120000,"per_capita":0.51},"Nez Perce":{"pit":81,"sheltered":12,"unsheltered":69,"students":143,"shelters":2,"spending_millions":0.7,"city":"Lewiston","population":41000,"per_capita":1.98},"Latah":{"pit":79,"sheltered":12,"unsheltered":67,"students":112,"shelters":1,"spending_millions":0.5,"city":"Moscow","population":40000,"per_capita":1.98},"Elmore":{"pit":68,"sheltered":7,"unsheltered":61,"students":41,"shelters":0,"spending_millions":0.2,"city":"Mountain Home","population":27000,"per_capita":2.52},"Payette":{"pit":58,"sheltered":6,"unsheltered":52,"students":21,"shelters":0,"spending_millions":0.1,"city":"Payette","population":23000,"per_capita":2.52},"Blaine":{"pit":42,"sheltered":38,"unsheltered":4,"students":87,"shelters":1,"spending_millions":0.9,"city":"Hailey","population":23000,"per_capita":1.83},"Gem":{"pit":45,"sheltered":4,"unsheltered":41,"students":16,"shelters":0,"spending_millions":0.1,"city":"Emmett","population":18000,"per_capita":2.5},"Bonner":{"pit":44,"sheltered":18,"unsheltered":26,"students":94,"shelters":1,"spending_millions":0.6,"city":"Sandpoint","population":47000,"per_capita":0.94},"Jerome":{"pit":43,"sheltered":39,"unsheltered":4,"students":44,"shelters":0,"spending_millions":0.2,"city":"Jerome","population":24000,"per_capita":1.79},"Cassia":{"pit":43,"sheltered":39,"unsheltered":4,"students":52,"shelters":1,"spending_millions":0.2,"city":"Burley","population":24000,"per_capita":1.79},"Minidoka":{"pit":38,"sheltered":35,"unsheltered":3,"students":28,"shelters":0,"spending_millions":0.1,"city":"Rupert","population":21000,"per_capita":1.81},"Idaho":{"pit":32,"sheltered":5,"unsheltered":27,"students":24,"shelters":0,"spending_millions":0.1,"city":"Grangeville","population":16000,"per_capita":2.0},"Bingham":{"pit":32,"sheltered":14,"unsheltered":18,"students":76,"shelters":1,"spending_millions":0.3,"city":"Blackfoot","population":46000,"per_capita":0.7},"Owyhee":{"pit":28,"sheltered":3,"unsheltered":25,"students":12,"shelters":0,"spending_millions":0.06,"city":"Murphy","population":11000,"per_capita":2.55},"Valley":{"pit":28,"sheltered":3,"unsheltered":25,"students":13,"shelters":0,"spending_millions":0.08,"city":"Cascade","population":11000,"per_capita":2.55},"Gooding":{"pit":27,"sheltered":25,"unsheltered":2,"students":37,"shelters":0,"spending_millions":0.1,"city":"Gooding","population":15000,"per_capita":1.8},"Washington":{"pit":25,"sheltered":2,"unsheltered":23,"students":12,"shelters":0,"spending_millions":0.06,"city":"Weiser","population":10000,"per_capita":2.5},"Madison":{"pit":20,"sheltered":17,"unsheltered":3,"students":89,"shelters":1,"spending_millions":0.4,"city":"Rexburg","population":39000,"per_capita":0.51},"Boise":{"pit":18,"sheltered":2,"unsheltered":16,"students":6,"shelters":0,"spending_millions":0.05,"city":"Idaho City","population":7000,"per_capita":2.57},"Clearwater":{"pit":17,"sheltered":3,"unsheltered":14,"students":22,"shelters":0,"spending_millions":0.1,"city":"Orofino","population":8500,"per_capita":2.0},"Jefferson":{"pit":15,"sheltered":12,"unsheltered":3,"students":33,"shelters":0,"spending_millions":0.1,"city":"Rigby","population":29000,"per_capita":0.52},"Boundary":{"pit":12,"sheltered":5,"unsheltered":7,"students":19,"shelters":0,"spending_millions":0.1,"city":"Bonners Ferry","population":13000,"per_capita":0.92},"Shoshone":{"pit":12,"sheltered":5,"unsheltered":7,"students":48,"shelters":0,"spending_millions":0.2,"city":"Wallace","population":13000,"per_capita":0.92},"Adams":{"pit":10,"sheltered":1,"unsheltered":9,"students":8,"shelters":0,"spending_millions":0.05,"city":"Council","population":4000,"per_capita":2.5},"Lincoln":{"pit":10,"sheltered":9,"unsheltered":1,"students":8,"shelters":0,"spending_millions":0.05,"city":"Shoshone","population":5500,"per_capita":1.82},"Franklin":{"pit":10,"sheltered":5,"unsheltered":5,"students":11,"shelters":0,"spending_millions":0.05,"city":"Preston","population":14000,"per_capita":0.71},"Benewah":{"pit":9,"sheltered":4,"unsheltered":5,"students":14,"shelters":0,"spending_millions":0.1,"city":"St. Maries","population":9500,"per_capita":0.95},"Lewis":{"pit":8,"sheltered":2,"unsheltered":6,"students":6,"shelters":0,"spending_millions":0.03,"city":"Nezperce","population":3800,"per_capita":2.11},"Fremont":{"pit":7,"sheltered":6,"unsheltered":1,"students":28,"shelters":0,"spending_millions":0.1,"city":"St. Anthony","population":14000,"per_capita":0.5},"Power":{"pit":6,"sheltered":3,"unsheltered":3,"students":14,"shelters":0,"spending_millions":0.08,"city":"American Falls","population":8000,"per_capita":0.75},"Teton":{"pit":6,"sheltered":5,"unsheltered":1,"students":18,"shelters":0,"spending_millions":0.1,"city":"Driggs","population":12000,"per_capita":0.5},"Caribou":{"pit":5,"sheltered":2,"unsheltered":3,"students":9,"shelters":0,"spending_millions":0.05,"city":"Soda Springs","population":7000,"per_capita":0.71},"Bear Lake":{"pit":5,"sheltered":2,"unsheltered":3,"students":7,"shelters":0,"spending_millions":0.03,"city":"Paris","population":6500,"per_capita":0.77},"Lemhi":{"pit":4,"sheltered":3,"unsheltered":1,"students":11,"shelters":0,"spending_millions":0.08,"city":"Salmon","population":8000,"per_capita":0.5},"Oneida":{"pit":3,"sheltered":1,"unsheltered":2,"students":5,"shelters":0,"spending_millions":0.03,"city":"Malad City","population":5000,"per_capita":0.6},"Camas":{"pit":2,"sheltered":2,"unsheltered":0,"students":3,"shelters":0,"spending_millions":0.02,"city":"Fairfield","population":1200,"per_capita":1.67},"Custer":{"pit":2,"sheltered":2,"unsheltered":0,"students":7,"shelters":0,"spending_millions":0.05,"city":"Challis","population":4200,"per_capita":0.48},"Clark":{"pit":1,"sheltered":1,"unsheltered":0,"students":1,"shelters":0,"spending_millions":0,"city":"Dubois","population":1000,"per_capita":1.0},"Butte":{"pit":1,"sheltered":1,"unsheltered":0,"students":5,"shelters":0,"spending_millions":0.05,"city":"Arco","population":2600,"per_capita":0.38}};
 
 // ── INCIDENT PIN BUILDER ─────────────────────────────────────────────────────
 // Populated by loadIncidents() from data/incidents.json (scraper output)
@@ -431,7 +439,14 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // ── CHOROPLETH ───────────────────────────────────────────────────────────────
-function getColor(pit) {
+function getColor(pit, per_capita) {
+  if (sortKey === 'per_capita') {
+    return per_capita > 6   ? '#c9152a'
+         : per_capita > 3   ? '#8b1a1a'
+         : per_capita > 1.5 ? '#7a4f1a'
+         : per_capita > 0.5 ? '#3d5a1e'
+         :                    '#1e3a2f';
+  }
   return pit > 200 ? '#c9152a'
        : pit > 75  ? '#8b1a1a'
        : pit > 30  ? '#7a4f1a'
@@ -443,8 +458,9 @@ function countyStyle(feature) {
   const name = feature.properties.NAME;
   const data = COUNTY_DATA[name];
   const pit = data ? data.pit : 0;
+  const per_capita = data ? data.per_capita : 0;
   return {
-    fillColor: getColor(pit),
+    fillColor: getColor(pit, per_capita),
     weight: 1,
     opacity: 1,
     color: '#374151',
@@ -461,7 +477,9 @@ function buildPopup(name) {
     <div class="popup-city">${d.city || ''}</div>
   </div>
   <div class="popup-body">
-    <div class="popup-row"><span class="popup-label">PIT Count (2024)</span><span class="popup-val gold">${(d.pit||0).toLocaleString()}</span></div>
+    <div class="popup-row"><span class="popup-label">PIT Count (2025)</span><span class="popup-val gold">${(d.pit||0).toLocaleString()}</span></div>
+    <div class="popup-row"><span class="popup-label">Per 1,000 Residents</span><span class="popup-val ${(d.per_capita||0) > 3 ? 'red' : ''}">${(d.per_capita||0).toFixed(2)}</span></div>
+    <div class="popup-row"><span class="popup-label">County Population</span><span class="popup-val">${(d.population||0).toLocaleString()}</span></div>
     <div class="popup-row"><span class="popup-label">Sheltered</span><span class="popup-val">${(d.sheltered||0).toLocaleString()}</span></div>
     <div class="popup-row"><span class="popup-label">Unsheltered</span><span class="popup-val red">${(d.unsheltered||0).toLocaleString()}</span></div>
     <div class="popup-row"><span class="popup-label">Homeless Students</span><span class="popup-val">${(d.students||0).toLocaleString()}</span></div>
@@ -510,9 +528,9 @@ fetch('data/counties.json')
 
 // ── INCIDENT PINS ────────────────────────────────────────────────────────────
 function makeIcon(type) {
-  const colors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2', news: '#c9a84c' };
+  const colors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2', news: '#38bdf8' };
   const shapes = { camp: '50%', arrest: '3px', reddit: '50%', news: '3px' };
-  const sizes = { camp: 14, arrest: 12, reddit: 12, news: 12 };
+  const sizes = { camp: 14, arrest: 12, reddit: 12, news: 11 };
   const t = colors[type] ? type : 'news';
   const s = sizes[t];
   return L.divIcon({
@@ -527,9 +545,10 @@ const campMarkers = [], arrestMarkers = [], redditMarkers = [];
 let campGroup = L.layerGroup().addTo(map);
 let arrestGroup = L.layerGroup().addTo(map);
 let redditGroup = L.layerGroup().addTo(map);
+let newsGroup = L.layerGroup().addTo(map);
 
 function buildIncidentMarkers(incidents) {
-  campGroup.clearLayers(); arrestGroup.clearLayers(); redditGroup.clearLayers();
+  campGroup.clearLayers(); arrestGroup.clearLayers(); redditGroup.clearLayers(); newsGroup.clearLayers();
   const typeColors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2', news: '#c9a84c' };
   const typeLabels = { camp: 'KNOWN CAMP', arrest: 'ARREST / INCIDENT', reddit: 'REDDIT REPORT', news: 'NEWS REPORT' };
   incidents.forEach(inc => {
@@ -545,6 +564,7 @@ function buildIncidentMarkers(incidents) {
     const marker = L.marker([inc.lat, inc.lng], { icon: makeIcon(t) }).bindPopup(popup, { maxWidth: 260 });
     if (t === 'camp') campGroup.addLayer(marker);
     else if (t === 'reddit') redditGroup.addLayer(marker);
+    else if (t === 'news') newsGroup.addLayer(marker);
     else arrestGroup.addLayer(marker);
   });
   console.log(`Loaded ${incidents.length} incident pins`);
@@ -571,7 +591,7 @@ function loadIncidents() {
 loadIncidents();
 
 // ── LAYER TOGGLES ─────────────────────────────────────────────────────────
-const layerState = { choropleth: true, camps: true, arrests: true, reddit: true };
+const layerState = { choropleth: true, camps: true, arrests: true, reddit: true, news: true };
 
 function toggleLayer(key) {
   layerState[key] = !layerState[key];
@@ -585,6 +605,8 @@ function toggleLayer(key) {
     layerState[key] ? arrestGroup.addTo(map) : map.removeLayer(arrestGroup);
   } else if (key === 'reddit') {
     layerState[key] ? redditGroup.addTo(map) : map.removeLayer(redditGroup);
+  } else if (key === 'news') {
+    layerState[key] ? newsGroup.addTo(map) : map.removeLayer(newsGroup);
   }
 }
 
@@ -638,6 +660,25 @@ function sortCounties(key) {
   document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sort-' + key).classList.add('active');
   renderCountyList();
+  if (choroplethLayer) choroplethLayer.eachLayer(l => choroplethLayer.resetStyle(l));
+  // Update legend
+  if (key === 'per_capita') {
+    document.getElementById('legend-title').textContent = 'Per 1,000 Residents';
+    document.getElementById('legend-scale').innerHTML = `
+      <div class="legend-row"><div class="legend-swatch" style="background:#1e3a2f"></div>&lt; 0.5</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#3d5a1e"></div>0.5 – 1.5</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#7a4f1a"></div>1.5 – 3</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#8b1a1a"></div>3 – 6</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#c9152a"></div>6+</div>`;
+  } else {
+    document.getElementById('legend-title').textContent = 'PIT Count';
+    document.getElementById('legend-scale').innerHTML = `
+      <div class="legend-row"><div class="legend-swatch" style="background:#1e3a2f"></div>0 – 10</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#3d5a1e"></div>11 – 30</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#7a4f1a"></div>31 – 75</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#8b1a1a"></div>76 – 200</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#c9152a"></div>200+</div>`;
+  }
 }
 
 function filterCounties(val) {
