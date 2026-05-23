@@ -57,7 +57,8 @@ EXCLUDE_KEYWORDS = ['campaign','primary','republican','democrat','election',
                     'estate recovery','medicaid','cats from','dog park','lost dog',
                     'missing person','end of homelessness','awareness encampment',
                     'tenants united','great bones','in need of help','help/advice',
-                    'spokane','born here','you can only die','missing idaho']
+                    'spokane','born here','you can only die','missing idaho',
+                    'thanksgiving','christmas','holiday','coat drive','toy drive']
 
 def is_homeless_related(text):
     t = text.lower()

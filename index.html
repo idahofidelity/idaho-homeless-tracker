@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Idaho Homeless Tracker</title>
+<title>Idaho Homeless Tracker | Idaho Fidelity Foundation</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -414,6 +414,10 @@
       </div>
     </div>
   </div>
+  <div style="position:absolute;bottom:8px;left:8px;background:rgba(13,17,23,0.85);border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:10px;color:#7d8590;max-width:220px;z-index:999;line-height:1.5;">
+    <strong style="color:#c9a84c;">Data sources:</strong> Idaho Housing &amp; Finance (2025 PIT), Idaho Dept. of Education (McKinney-Vento), Google News, Reddit.<br>
+    County-level PIT counts for regions 1–6 are population-weighted estimates from regional totals. Ada County (Region 7) is an exact count.
+  </div>
 </div>
 
 <script>
@@ -554,10 +558,11 @@ function buildIncidentMarkers(incidents) {
   incidents.forEach(inc => {
     const t = inc.type || 'news';
     const linkHtml = inc.url ? `<a href="${inc.url}" target="_blank" style="color:var(--accent);font-size:10px;">View source ↗</a>` : '';
+    const descHtml = (inc.desc && inc.desc !== inc.title) ? `<div class="incident-desc">${inc.desc}</div>` : '';
     const popup = `<div class="incident-popup">
       <div class="incident-type" style="color:${typeColors[t]||'#aaa'}">${typeLabels[t]||'REPORT'}</div>
       <div style="font-family:'Oswald',sans-serif;font-size:15px;margin-bottom:4px;">${inc.title||''}</div>
-      <div class="incident-desc">${inc.desc||''}</div>
+      ${descHtml}
       <div class="incident-date">${inc.date||''} &nbsp;·&nbsp; <span class="incident-source">${inc.source||''}</span></div>
       <div style="margin-top:6px">${linkHtml}</div>
     </div>`;
