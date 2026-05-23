@@ -155,6 +155,8 @@
   #map {
     flex: 1;
     background: #0a1628;
+    min-height: 100%;
+    height: 100%;
   }
 
   /* Leaflet popup override */
@@ -322,8 +324,8 @@
     <div class="county-list" id="county-list"></div>
   </div>
 
-  <div style="position:relative;flex:1;">
-    <div id="map"></div>
+  <div style="position:relative;flex:1;height:100%;">
+    <div id="map" style="width:100%;height:100%;"></div>
     <div class="legend">
       <div class="legend-title">PIT Count</div>
       <div class="legend-row"><div class="legend-swatch" style="background:#1e3a2f"></div>0 – 10</div>
@@ -481,7 +483,7 @@ function buildChoropleth(geojson) {
 
 fetch('data/counties.json')
   .then(r => r.json())
-  .then(geojson => buildChoropleth(geojson))
+  .then(geojson => { buildChoropleth(geojson); setTimeout(() => map.invalidateSize(), 100); })
   .catch(e => console.error('Failed to load counties.json:', e));
 
 // ── INCIDENT PINS ────────────────────────────────────────────────────────────
