@@ -390,20 +390,8 @@ const COUNTY_DATA = {
   "Clark":{"pit":0,"sheltered":0,"unsheltered":0,"students":1,"shelters":0,"spending_millions":0,"city":"Dubois"}
 };
 
-// Sample incidents — will be replaced by scraper output
-const INCIDENTS = [
-  {type:"camp",lat:43.6150,lng:-116.2023,title:"Boise River Camp",desc:"Established camp along Boise River greenbelt. Est. 30-50 individuals.",date:"2024-10-12",source:"BoiseDev"},
-  {type:"camp",lat:43.6365,lng:-116.5635,title:"Nampa I-84 Camp",desc:"Camp reported near I-84 underpass on Garrity Blvd.",date:"2024-09-28",source:"Idaho Press"},
-  {type:"camp",lat:47.6741,lng:-116.7800,title:"CdA Riverstone Area",desc:"Small encampment reported near Riverstone development.",date:"2024-11-02",source:"CdA Press"},
-  {type:"camp",lat:47.6587,lng:-116.7886,title:"Post Falls Underpass",desc:"Transient camp reported under US-90 overpass.",date:"2024-10-18",source:"Local report"},
-  {type:"arrest",lat:43.6132,lng:-116.1998,title:"Trespassing Arrests",desc:"7 arrested for trespassing at Julia Davis Park. Cited and released.",date:"2024-10-05",source:"Boise PD"},
-  {type:"arrest",lat:47.6741,lng:-116.7800,title:"CdA Park Enforcement",desc:"3 individuals cited for illegal camping at McEuen Park.",date:"2024-09-15",source:"CdA Police"},
-  {type:"arrest",lat:42.8713,lng:-112.4455,title:"Pocatello Clearance",desc:"City cleared encampment near Clark St bridge. 12 individuals relocated.",date:"2024-11-10",source:"Idaho State Journal"},
-  {type:"reddit",lat:43.6150,lng:-116.2300,title:"r/Boise",desc:"Thread: 'Camp on the Greenbelt near Americana has doubled in size since summer' — multiple user reports with photos.",date:"2024-10-22",source:"r/Boise"},
-  {type:"reddit",lat:47.6794,lng:-116.7982,title:"r/Coeur_d_Alene",desc:"Thread: 'Tent city forming near Walmart on 95' — confirmed by multiple commenters.",date:"2024-10-30",source:"r/Coeur_d_Alene"},
-  {type:"reddit",lat:42.5630,lng:-114.4618,title:"r/Idaho",desc:"Thread: 'Twin Falls downtown seeing increase in transient population near CSI' — local reports.",date:"2024-11-01",source:"r/Idaho"},
-  {type:"reddit",lat:43.4917,lng:-112.0408,title:"r/Idaho",desc:"Thread: 'Idaho Falls shelter at capacity, people being turned away' — shelter worker reply confirms.",date:"2024-11-05",source:"r/Idaho"},
-];
+// ── INCIDENT PIN BUILDER ─────────────────────────────────────────────────────
+// Populated by loadIncidents() from data/incidents.json (scraper output)
 
 // ── MAP SETUP ────────────────────────────────────────────────────────────────
 const map = L.map('map', {
@@ -505,26 +493,51 @@ function makeIcon(type) {
 }
 
 const campMarkers = [], arrestMarkers = [], redditMarkers = [];
+let campGroup = L.layerGroup().addTo(map);
+let arrestGroup = L.layerGroup().addTo(map);
+let redditGroup = L.layerGroup().addTo(map);
 
-INCIDENTS.forEach(inc => {
-  const typeColors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2' };
-  const typeLabels = { camp: 'KNOWN CAMP', arrest: 'ARREST / INCIDENT', reddit: 'REDDIT REPORT' };
-  const popup = `<div class="incident-popup">
-    <div class="incident-type" style="color:${typeColors[inc.type]}">${typeLabels[inc.type]}</div>
-    <div style="font-family:'Oswald',sans-serif;font-size:15px;margin-bottom:4px;">${inc.title}</div>
-    <div class="incident-desc">${inc.desc}</div>
-    <div class="incident-date">${inc.date}</div>
-    <div class="incident-source">${inc.source}</div>
-  </div>`;
-  const marker = L.marker([inc.lat, inc.lng], { icon: makeIcon(inc.type) }).bindPopup(popup, { maxWidth: 250 });
-  if (inc.type === 'camp') campMarkers.push(marker);
-  else if (inc.type === 'arrest') arrestMarkers.push(marker);
-  else redditMarkers.push(marker);
-});
+function buildIncidentMarkers(incidents) {
+  campGroup.clearLayers(); arrestGroup.clearLayers(); redditGroup.clearLayers();
+  const typeColors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2', news: '#c9a84c' };
+  const typeLabels = { camp: 'KNOWN CAMP', arrest: 'ARREST / INCIDENT', reddit: 'REDDIT REPORT', news: 'NEWS REPORT' };
+  incidents.forEach(inc => {
+    const t = inc.type || 'news';
+    const linkHtml = inc.url ? `<a href="${inc.url}" target="_blank" style="color:var(--accent);font-size:10px;">View source ↗</a>` : '';
+    const popup = `<div class="incident-popup">
+      <div class="incident-type" style="color:${typeColors[t]||'#aaa'}">${typeLabels[t]||'REPORT'}</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:15px;margin-bottom:4px;">${inc.title||''}</div>
+      <div class="incident-desc">${inc.desc||''}</div>
+      <div class="incident-date">${inc.date||''} &nbsp;·&nbsp; <span class="incident-source">${inc.source||''}</span></div>
+      <div style="margin-top:6px">${linkHtml}</div>
+    </div>`;
+    const marker = L.marker([inc.lat, inc.lng], { icon: makeIcon(t) }).bindPopup(popup, { maxWidth: 260 });
+    if (t === 'camp') campGroup.addLayer(marker);
+    else if (t === 'reddit') redditGroup.addLayer(marker);
+    else arrestGroup.addLayer(marker);
+  });
+  console.log(`Loaded ${incidents.length} incident pins`);
+}
 
-const campGroup = L.layerGroup(campMarkers).addTo(map);
-const arrestGroup = L.layerGroup(arrestMarkers).addTo(map);
-const redditGroup = L.layerGroup(redditMarkers).addTo(map);
+// Load from scraper JSON, fall back to empty
+function loadIncidents() {
+  fetch('data/incidents.json?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      buildIncidentMarkers(data.incidents || []);
+      if (data.updated) {
+        const d = new Date(data.updated);
+        document.getElementById('last-updated').textContent = d.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+      }
+      console.log(`incidents.json loaded: ${data.count} items, updated ${data.updated}`);
+    })
+    .catch(() => {
+      console.warn('No incidents.json found — run scraper.py to populate pins');
+      document.getElementById('last-updated').textContent = 'Not yet scraped';
+    });
+}
+
+loadIncidents();
 
 // ── LAYER TOGGLES ─────────────────────────────────────────────────────────
 const layerState = { choropleth: true, camps: true, arrests: true, reddit: true };
@@ -556,7 +569,7 @@ document.getElementById('hstat-total').textContent = totalPIT.toLocaleString();
 document.getElementById('hstat-unsheltered').textContent = totalUnsheltered.toLocaleString();
 document.getElementById('hstat-students').textContent = totalStudents.toLocaleString();
 document.getElementById('hstat-spending').textContent = '$' + totalSpend.toFixed(1) + 'M';
-document.getElementById('last-updated').textContent = new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+// last-updated set by loadIncidents()
 
 // ── SIDEBAR COUNTY LIST ───────────────────────────────────────────────────────
 let sortKey = 'pit';
