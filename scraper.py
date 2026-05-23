@@ -55,7 +55,9 @@ EXCLUDE_KEYWORDS = ['campaign','primary','republican','democrat','election',
                     '5k','fun run','walk to end','run to end','gala','benefit dinner',
                     'places to nap','nap spot','pear tree','senior cat','my cat',
                     'estate recovery','medicaid','cats from','dog park','lost dog',
-                    'missing person','end of homelessness']
+                    'missing person','end of homelessness','awareness encampment',
+                    'tenants united','great bones','in need of help','help/advice',
+                    'spokane','born here','you can only die','missing idaho']
 
 def is_homeless_related(text):
     t = text.lower()
@@ -132,10 +134,31 @@ NEWS_FEEDS = [
 
 def extract_items(xml, source, lat, lng):
     results = []
+
+    # City keyword → coords for smarter pin placement
+    CITY_COORDS = {
+        'boise': (43.6150, -116.2023), 'ada county': (43.6150, -116.2023),
+        'nampa': (43.5407, -116.5635), 'canyon county': (43.5407, -116.5635),
+        "coeur d'alene": (47.6741, -116.7800), 'coeur dalene': (47.6741, -116.7800),
+        'north idaho': (47.6741, -116.7800), 'kootenai': (47.6741, -116.7800),
+        'post falls': (47.7182, -116.9516), 'sandpoint': (48.2766, -116.5535),
+        'lewiston': (46.4165, -117.0177), 'moscow': (46.7324, -117.0002),
+        'twin falls': (42.5630, -114.4618), 'magic valley': (42.5630, -114.4618),
+        'pocatello': (42.8713, -112.4455), 'bannock': (42.8713, -112.4455),
+        'idaho falls': (43.4917, -112.0408), 'bonneville': (43.4917, -112.0408),
+        'meridian': (43.6121, -116.3915), 'caldwell': (43.6629, -116.6874),
+    }
+
     for item in re.findall(r'<item>(.*?)</item>', xml, re.DOTALL)[:20]:
         def tag(t): m = re.search(rf'<{t}[^>]*>(.*?)</{t}>', item, re.DOTALL); return re.sub(r'<[^>]+>','',m.group(1)).replace('<![CDATA[','').replace(']]>','').strip() if m else ''
         title, desc, date_s, link = tag('title'), tag('description'), tag('pubDate'), tag('link')
-        if not is_homeless_related(title + ' ' + desc):
+
+        # Clean desc — if it's a URL or HTML blob, use title instead
+        desc_clean = desc[:200] if desc and not desc.strip().startswith('<a ') and 'http' not in desc[:30] else ''
+        if not desc_clean:
+            desc_clean = title[:200]
+
+        if not is_homeless_related(title + ' ' + desc_clean):
             continue
         try:
             pub = datetime.strptime(date_s[:25], '%a, %d %b %Y %H:%M:%S')
@@ -143,13 +166,22 @@ def extract_items(xml, source, lat, lng):
             date_out = pub.strftime('%Y-%m-%d')
         except:
             date_out = datetime.now().strftime('%Y-%m-%d')
-        itype = 'arrest' if any(w in (title+desc).lower() for w in ['arrest','cited','cleared','enforcement','removed']) else 'camp' if any(w in (title+desc).lower() for w in ['camp','encampment','tent']) else 'news'
+
+        # Smarter coords — check title for city names
+        pin_lat, pin_lng = lat, lng
+        title_lower = title.lower()
+        for city, coords in CITY_COORDS.items():
+            if city in title_lower:
+                pin_lat, pin_lng = coords
+                break
+
+        itype = 'arrest' if any(w in (title+desc_clean).lower() for w in ['arrest','cited','cleared','enforcement','removed','banned','ban']) else 'camp' if any(w in (title+desc_clean).lower() for w in ['camp','encampment','tent']) else 'news'
         results.append({
             'type': itype,
-            'lat': round(lat + random.uniform(-0.03, 0.03), 4),
-            'lng': round(lng + random.uniform(-0.03, 0.03), 4),
+            'lat': round(pin_lat + random.uniform(-0.02, 0.02), 4),
+            'lng': round(pin_lng + random.uniform(-0.02, 0.02), 4),
             'title': title[:100],
-            'desc': desc[:200],
+            'desc': desc_clean,
             'date': date_out,
             'source': source,
             'url': link
