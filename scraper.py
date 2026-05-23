@@ -52,7 +52,10 @@ EXCLUDE_KEYWORDS = ['campaign','primary','republican','democrat','election',
                     'camp fire','camp site','campsite','camping trip','summer camp',
                     'camp david','transient ischemic','transit','transistor','transgender',
                     'charity event','donation','fundrais','food drive','volunteer',
-                    '5k','fun run','walk to end','run to end','gala','benefit dinner']
+                    '5k','fun run','walk to end','run to end','gala','benefit dinner',
+                    'places to nap','nap spot','pear tree','senior cat','my cat',
+                    'estate recovery','medicaid','cats from','dog park','lost dog',
+                    'missing person','end of homelessness']
 
 def is_homeless_related(text):
     t = text.lower()
@@ -92,7 +95,7 @@ def scrape_reddit():
                 selftext = p.get('selftext', '')
                 created = datetime.fromtimestamp(p.get('created_utc', 0))
                 score = p.get('score', 0)
-                if created < cutoff or score < 5:
+                if created < cutoff or score < 10:
                     continue
                 if not is_homeless_related(title + ' ' + selftext):
                     continue
