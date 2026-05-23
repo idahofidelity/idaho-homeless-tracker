@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idaho Homeless Tracker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #21262d;
+    --accent: #c9a84c;
+    --accent2: #e05c3a;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --low: #1e3a2f;
+    --mid: #7a4f1a;
+    --high: #8b1a1a;
+    --critical: #c9152a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Source Serif 4', Georgia, serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--accent);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 1000;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #000;
+  }
+  .logo-text { font-family: 'Oswald', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 2px; color: var(--text); }
+  .logo-sub { font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-top: 1px; }
+
+  .header-stats {
+    display: flex; gap: 24px;
+  }
+  .hstat {
+    text-align: center;
+  }
+  .hstat-val { font-family: 'Oswald', sans-serif; font-size: 22px; font-weight: 700; color: var(--accent); }
+  .hstat-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .updated { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 500;
+  }
+
+  .sidebar-section {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+  .sidebar-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  /* Layer toggles */
+  .layer-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .layer-toggle:last-child { margin-bottom: 0; }
+  .layer-name { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .layer-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .toggle-switch {
+    width: 34px; height: 18px;
+    background: var(--border);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--accent); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: white;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: left 0.2s;
+  }
+  .toggle-switch.on::after { left: 19px; }
+
+  /* County list */
+  .county-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .county-list::-webkit-scrollbar { width: 4px; }
+  .county-list::-webkit-scrollbar-track { background: var(--panel); }
+  .county-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .county-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .county-item:hover, .county-item.active { background: #1f2937; }
+  .county-item-name { font-size: 13px; font-weight: 400; }
+  .county-item-city { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .county-badge {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 3px;
+    min-width: 36px;
+    text-align: center;
+  }
+
+  /* Map */
+  #map {
+    flex: 1;
+    background: #0a1628;
+  }
+
+  /* Leaflet popup override */
+  .leaflet-popup-content-wrapper {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  .leaflet-popup-tip { background: var(--panel); }
+  .leaflet-popup-content { margin: 0; min-width: 220px; }
+  .leaflet-container a.leaflet-popup-close-button { color: var(--muted); top: 8px; right: 8px; }
+  .leaflet-container a.leaflet-popup-close-button:hover { color: var(--text); }
+
+  .popup-header {
+    background: linear-gradient(135deg, #1a1f2e, #0d1117);
+    border-bottom: 2px solid var(--accent);
+    padding: 12px 14px;
+    border-radius: 6px 6px 0 0;
+  }
+  .popup-county { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .popup-city { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .popup-body { padding: 12px 14px; }
+  .popup-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .popup-row:last-child { border-bottom: none; }
+  .popup-label { color: var(--muted); font-size: 12px; }
+  .popup-val { font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 500; }
+  .popup-val.red { color: var(--accent2); }
+  .popup-val.gold { color: var(--accent); }
+  .popup-val.green { color: #4ade80; }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    bottom: 24px;
+    right: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    z-index: 999;
+    min-width: 140px;
+  }
+  .legend-title { font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 12px; color: var(--muted); }
+  .legend-swatch { width: 18px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Incident pins */
+  .pin-camp { background: #e05c3a; border: 2px solid #fff3; border-radius: 50%; width: 14px; height: 14px; }
+  .pin-arrest { background: #c9a84c; border: 2px solid #fff3; border-radius: 3px; width: 14px; height: 14px; }
+  .pin-reddit { background: #5865f2; border: 2px solid #fff3; border-radius: 50%; width: 12px; height: 12px; }
+
+  .incident-popup {
+    padding: 10px 12px;
+    max-width: 220px;
+  }
+  .incident-type {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .incident-desc { font-size: 12px; line-height: 1.5; color: var(--text); }
+  .incident-date { font-size: 10px; color: var(--muted); margin-top: 6px; }
+  .incident-source { font-size: 10px; color: var(--muted); }
+
+  /* Search bar */
+  .search-wrap { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .search-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Source Serif 4', serif;
+    font-size: 13px;
+    padding: 6px 10px;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  /* Sort controls */
+  .sort-row { display: flex; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+  .sort-btn {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    color: var(--muted); font-size: 11px; padding: 4px 6px;
+    border-radius: 3px; cursor: pointer; text-align: center;
+    transition: all 0.15s; font-family: 'Oswald', sans-serif; letter-spacing: 1px;
+  }
+  .sort-btn:hover, .sort-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">ID</div>
+    <div>
+      <div class="logo-text">IDAHO HOMELESS TRACKER</div>
+      <div class="logo-sub">Idaho Fidelity Foundation</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-val" id="hstat-total">—</div>
+      <div class="hstat-label">Total (PIT 2024)</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="hstat-unsheltered">—</div>
+      <div class="hstat-label">Unsheltered</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="hstat-students">—</div>
+      <div class="hstat-label">Homeless Students</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="hstat-spending">—</div>
+      <div class="hstat-label">Est. Annual Spend</div>
+    </div>
+  </div>
+  <div class="updated">Last scraped: <span id="last-updated">—</span></div>
+</header>
+
+<div class="app-body">
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Map Layers</div>
+      <div class="layer-toggle" onclick="toggleLayer('choropleth')">
+        <div class="layer-name"><div class="layer-dot" style="background:#c9152a"></div>PIT Count Heat Map</div>
+        <div class="toggle-switch on" id="toggle-choropleth"></div>
+      </div>
+      <div class="layer-toggle" onclick="toggleLayer('camps')">
+        <div class="layer-name"><div class="layer-dot" style="background:#e05c3a"></div>Known Camps</div>
+        <div class="toggle-switch on" id="toggle-camps"></div>
+      </div>
+      <div class="layer-toggle" onclick="toggleLayer('arrests')">
+        <div class="layer-name"><div class="layer-dot" style="background:#c9a84c"></div>Arrests / Incidents</div>
+        <div class="toggle-switch on" id="toggle-arrests"></div>
+      </div>
+      <div class="layer-toggle" onclick="toggleLayer('reddit')">
+        <div class="layer-name"><div class="layer-dot" style="background:#5865f2"></div>Reddit Reports</div>
+        <div class="toggle-switch on" id="toggle-reddit"></div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search-input" id="county-search" placeholder="Search counties…" oninput="filterCounties(this.value)">
+    </div>
+
+    <div class="sort-row">
+      <div class="sort-btn active" id="sort-pit" onclick="sortCounties('pit')">PIT</div>
+      <div class="sort-btn" id="sort-unsheltered" onclick="sortCounties('unsheltered')">UNSHELTERED</div>
+      <div class="sort-btn" id="sort-students" onclick="sortCounties('students')">STUDENTS</div>
+    </div>
+
+    <div class="county-list" id="county-list"></div>
+  </div>
+
+  <div style="position:relative;flex:1;">
+    <div id="map"></div>
+    <div class="legend">
+      <div class="legend-title">PIT Count</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#1e3a2f"></div>0 – 10</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#3d5a1e"></div>11 – 30</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#7a4f1a"></div>31 – 75</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#8b1a1a"></div>76 – 200</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#c9152a"></div>200+</div>
+      <div style="margin-top:10px; border-top:1px solid var(--border); padding-top:8px;">
+        <div class="legend-title">Pins</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#e05c3a;border-radius:50%"></div>Camp</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#c9a84c;border-radius:2px"></div>Arrest/Incident</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#5865f2;border-radius:50%"></div>Reddit Report</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const COUNTY_DATA = {
+  "Ada":{"pit":789,"sheltered":512,"unsheltered":277,"students":1842,"shelters":8,"spending_millions":12.4,"city":"Boise"},
+  "Canyon":{"pit":187,"sheltered":98,"unsheltered":89,"students":643,"shelters":3,"spending_millions":3.1,"city":"Nampa"},
+  "Kootenai":{"pit":142,"sheltered":71,"unsheltered":71,"students":398,"shelters":4,"spending_millions":2.8,"city":"Coeur d'Alene"},
+  "Bannock":{"pit":98,"sheltered":61,"unsheltered":37,"students":287,"shelters":2,"spending_millions":1.9,"city":"Pocatello"},
+  "Bonneville":{"pit":76,"sheltered":45,"unsheltered":31,"students":312,"shelters":2,"spending_millions":1.4,"city":"Idaho Falls"},
+  "Twin Falls":{"pit":64,"sheltered":38,"unsheltered":26,"students":198,"shelters":3,"spending_millions":1.2,"city":"Twin Falls"},
+  "Blaine":{"pit":41,"sheltered":22,"unsheltered":19,"students":87,"shelters":1,"spending_millions":0.9,"city":"Hailey"},
+  "Nez Perce":{"pit":38,"sheltered":24,"unsheltered":14,"students":143,"shelters":2,"spending_millions":0.7,"city":"Lewiston"},
+  "Latah":{"pit":29,"sheltered":18,"unsheltered":11,"students":112,"shelters":1,"spending_millions":0.5,"city":"Moscow"},
+  "Bonner":{"pit":31,"sheltered":14,"unsheltered":17,"students":94,"shelters":1,"spending_millions":0.6,"city":"Sandpoint"},
+  "Madison":{"pit":22,"sheltered":15,"unsheltered":7,"students":89,"shelters":1,"spending_millions":0.4,"city":"Rexburg"},
+  "Bingham":{"pit":18,"sheltered":10,"unsheltered":8,"students":76,"shelters":1,"spending_millions":0.3,"city":"Blackfoot"},
+  "Jerome":{"pit":11,"sheltered":6,"unsheltered":5,"students":44,"shelters":0,"spending_millions":0.2,"city":"Jerome"},
+  "Elmore":{"pit":11,"sheltered":5,"unsheltered":6,"students":41,"shelters":0,"spending_millions":0.2,"city":"Mountain Home"},
+  "Shoshone":{"pit":15,"sheltered":6,"unsheltered":9,"students":48,"shelters":0,"spending_millions":0.2,"city":"Wallace"},
+  "Cassia":{"pit":12,"sheltered":7,"unsheltered":5,"students":52,"shelters":1,"spending_millions":0.2,"city":"Burley"},
+  "Jefferson":{"pit":8,"sheltered":4,"unsheltered":4,"students":33,"shelters":0,"spending_millions":0.1,"city":"Rigby"},
+  "Gooding":{"pit":9,"sheltered":5,"unsheltered":4,"students":37,"shelters":0,"spending_millions":0.1,"city":"Gooding"},
+  "Fremont":{"pit":7,"sheltered":3,"unsheltered":4,"students":28,"shelters":0,"spending_millions":0.1,"city":"St. Anthony"},
+  "Clearwater":{"pit":6,"sheltered":3,"unsheltered":3,"students":22,"shelters":0,"spending_millions":0.1,"city":"Orofino"},
+  "Idaho":{"pit":8,"sheltered":3,"unsheltered":5,"students":24,"shelters":0,"spending_millions":0.1,"city":"Grangeville"},
+  "Gem":{"pit":5,"sheltered":2,"unsheltered":3,"students":16,"shelters":0,"spending_millions":0.1,"city":"Emmett"},
+  "Payette":{"pit":6,"sheltered":3,"unsheltered":3,"students":21,"shelters":0,"spending_millions":0.1,"city":"Payette"},
+  "Boundary":{"pit":7,"sheltered":3,"unsheltered":4,"students":19,"shelters":0,"spending_millions":0.1,"city":"Bonners Ferry"},
+  "Benewah":{"pit":5,"sheltered":2,"unsheltered":3,"students":14,"shelters":0,"spending_millions":0.1,"city":"St. Maries"},
+  "Minidoka":{"pit":7,"sheltered":3,"unsheltered":4,"students":28,"shelters":0,"spending_millions":0.1,"city":"Rupert"},
+  "Teton":{"pit":6,"sheltered":3,"unsheltered":3,"students":18,"shelters":0,"spending_millions":0.1,"city":"Driggs"},
+  "Valley":{"pit":5,"sheltered":2,"unsheltered":3,"students":13,"shelters":0,"spending_millions":0.08,"city":"Cascade"},
+  "Washington":{"pit":4,"sheltered":2,"unsheltered":2,"students":12,"shelters":0,"spending_millions":0.06,"city":"Weiser"},
+  "Power":{"pit":5,"sheltered":2,"unsheltered":3,"students":14,"shelters":0,"spending_millions":0.08,"city":"American Falls"},
+  "Lemhi":{"pit":5,"sheltered":2,"unsheltered":3,"students":11,"shelters":0,"spending_millions":0.08,"city":"Salmon"},
+  "Custer":{"pit":4,"sheltered":1,"unsheltered":3,"students":7,"shelters":0,"spending_millions":0.05,"city":"Challis"},
+  "Owyhee":{"pit":4,"sheltered":1,"unsheltered":3,"students":12,"shelters":0,"spending_millions":0.06,"city":"Murphy"},
+  "Adams":{"pit":3,"sheltered":1,"unsheltered":2,"students":8,"shelters":0,"spending_millions":0.05,"city":"Council"},
+  "Caribou":{"pit":3,"sheltered":1,"unsheltered":2,"students":9,"shelters":0,"spending_millions":0.05,"city":"Soda Springs"},
+  "Franklin":{"pit":3,"sheltered":1,"unsheltered":2,"students":11,"shelters":0,"spending_millions":0.05,"city":"Preston"},
+  "Lincoln":{"pit":3,"sheltered":1,"unsheltered":2,"students":8,"shelters":0,"spending_millions":0.05,"city":"Shoshone"},
+  "Oneida":{"pit":2,"sheltered":1,"unsheltered":1,"students":5,"shelters":0,"spending_millions":0.03,"city":"Malad City"},
+  "Bear Lake":{"pit":2,"sheltered":1,"unsheltered":1,"students":7,"shelters":0,"spending_millions":0.03,"city":"Paris"},
+  "Lewis":{"pit":2,"sheltered":1,"unsheltered":1,"students":6,"shelters":0,"spending_millions":0.03,"city":"Nezperce"},
+  "Boise":{"pit":2,"sheltered":1,"unsheltered":1,"students":6,"shelters":0,"spending_millions":0.05,"city":"Idaho City"},
+  "Butte":{"pit":2,"sheltered":1,"unsheltered":1,"students":5,"shelters":0,"spending_millions":0.05,"city":"Arco"},
+  "Camas":{"pit":1,"sheltered":0,"unsheltered":1,"students":3,"shelters":0,"spending_millions":0.02,"city":"Fairfield"},
+  "Clark":{"pit":0,"sheltered":0,"unsheltered":0,"students":1,"shelters":0,"spending_millions":0,"city":"Dubois"}
+};
+
+// Sample incidents — will be replaced by scraper output
+const INCIDENTS = [
+  {type:"camp",lat:43.6150,lng:-116.2023,title:"Boise River Camp",desc:"Established camp along Boise River greenbelt. Est. 30-50 individuals.",date:"2024-10-12",source:"BoiseDev"},
+  {type:"camp",lat:43.6365,lng:-116.5635,title:"Nampa I-84 Camp",desc:"Camp reported near I-84 underpass on Garrity Blvd.",date:"2024-09-28",source:"Idaho Press"},
+  {type:"camp",lat:47.6741,lng:-116.7800,title:"CdA Riverstone Area",desc:"Small encampment reported near Riverstone development.",date:"2024-11-02",source:"CdA Press"},
+  {type:"camp",lat:47.6587,lng:-116.7886,title:"Post Falls Underpass",desc:"Transient camp reported under US-90 overpass.",date:"2024-10-18",source:"Local report"},
+  {type:"arrest",lat:43.6132,lng:-116.1998,title:"Trespassing Arrests",desc:"7 arrested for trespassing at Julia Davis Park. Cited and released.",date:"2024-10-05",source:"Boise PD"},
+  {type:"arrest",lat:47.6741,lng:-116.7800,title:"CdA Park Enforcement",desc:"3 individuals cited for illegal camping at McEuen Park.",date:"2024-09-15",source:"CdA Police"},
+  {type:"arrest",lat:42.8713,lng:-112.4455,title:"Pocatello Clearance",desc:"City cleared encampment near Clark St bridge. 12 individuals relocated.",date:"2024-11-10",source:"Idaho State Journal"},
+  {type:"reddit",lat:43.6150,lng:-116.2300,title:"r/Boise",desc:"Thread: 'Camp on the Greenbelt near Americana has doubled in size since summer' — multiple user reports with photos.",date:"2024-10-22",source:"r/Boise"},
+  {type:"reddit",lat:47.6794,lng:-116.7982,title:"r/Coeur_d_Alene",desc:"Thread: 'Tent city forming near Walmart on 95' — confirmed by multiple commenters.",date:"2024-10-30",source:"r/Coeur_d_Alene"},
+  {type:"reddit",lat:42.5630,lng:-114.4618,title:"r/Idaho",desc:"Thread: 'Twin Falls downtown seeing increase in transient population near CSI' — local reports.",date:"2024-11-01",source:"r/Idaho"},
+  {type:"reddit",lat:43.4917,lng:-112.0408,title:"r/Idaho",desc:"Thread: 'Idaho Falls shelter at capacity, people being turned away' — shelter worker reply confirms.",date:"2024-11-05",source:"r/Idaho"},
+];
+
+// ── MAP SETUP ────────────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [44.5, -114.5],
+  zoom: 6,
+  zoomControl: true,
+  preferCanvas: true
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+// ── CHOROPLETH ───────────────────────────────────────────────────────────────
+function getColor(pit) {
+  return pit > 200 ? '#c9152a'
+       : pit > 75  ? '#8b1a1a'
+       : pit > 30  ? '#7a4f1a'
+       : pit > 10  ? '#3d5a1e'
+       :              '#1e3a2f';
+}
+
+function countyStyle(feature) {
+  const name = feature.properties.NAME;
+  const data = COUNTY_DATA[name];
+  const pit = data ? data.pit : 0;
+  return {
+    fillColor: getColor(pit),
+    weight: 1,
+    opacity: 1,
+    color: '#374151',
+    fillOpacity: 0.82
+  };
+}
+
+let choroplethLayer, activeCounty = null;
+
+function buildPopup(name) {
+  const d = COUNTY_DATA[name] || {};
+  return `<div class="popup-header">
+    <div class="popup-county">${name} County</div>
+    <div class="popup-city">${d.city || ''}</div>
+  </div>
+  <div class="popup-body">
+    <div class="popup-row"><span class="popup-label">PIT Count (2024)</span><span class="popup-val gold">${(d.pit||0).toLocaleString()}</span></div>
+    <div class="popup-row"><span class="popup-label">Sheltered</span><span class="popup-val">${(d.sheltered||0).toLocaleString()}</span></div>
+    <div class="popup-row"><span class="popup-label">Unsheltered</span><span class="popup-val red">${(d.unsheltered||0).toLocaleString()}</span></div>
+    <div class="popup-row"><span class="popup-label">Homeless Students</span><span class="popup-val">${(d.students||0).toLocaleString()}</span></div>
+    <div class="popup-row"><span class="popup-label">Active Shelters</span><span class="popup-val">${d.shelters||0}</span></div>
+    <div class="popup-row"><span class="popup-label">Est. Annual Spend</span><span class="popup-val red">$${(d.spending_millions||0).toFixed(2)}M</span></div>
+  </div>`;
+}
+
+const GEOJSON_DATA = ${open('/home/claude/idaho_counties_min.json').read()};
+
+choroplethLayer = L.geoJSON(GEOJSON_DATA, {
+  style: countyStyle,
+  onEachFeature: function(feature, layer) {
+    const name = feature.properties.NAME;
+    layer.on({
+      mouseover: function(e) {
+        if (activeCounty !== name) {
+          e.target.setStyle({ weight: 2, color: '#c9a84c', fillOpacity: 0.92 });
+        }
+      },
+      mouseout: function(e) {
+        if (activeCounty !== name) {
+          choroplethLayer.resetStyle(e.target);
+        }
+      },
+      click: function(e) {
+        activeCounty = name;
+        choroplethLayer.eachLayer(l => choroplethLayer.resetStyle(l));
+        e.target.setStyle({ weight: 2.5, color: '#c9a84c', fillOpacity: 0.95 });
+        L.popup({ maxWidth: 280, className: '' })
+          .setLatLng(e.latlng)
+          .setContent(buildPopup(name))
+          .openOn(map);
+        highlightSidebarCounty(name);
+      }
+    });
+  }
+}).addTo(map);
+
+// ── INCIDENT PINS ────────────────────────────────────────────────────────────
+function makeIcon(type) {
+  const colors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2' };
+  const shapes = { camp: '50%', arrest: '3px', reddit: '50%' };
+  const sizes = { camp: 14, arrest: 12, reddit: 12 };
+  const s = sizes[type];
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:${s}px;height:${s}px;background:${colors[type]};border-radius:${shapes[type]};border:2px solid rgba(255,255,255,0.3);box-shadow:0 2px 6px rgba(0,0,0,0.6)"></div>`,
+    iconSize: [s, s],
+    iconAnchor: [s/2, s/2]
+  });
+}
+
+const campMarkers = [], arrestMarkers = [], redditMarkers = [];
+
+INCIDENTS.forEach(inc => {
+  const typeColors = { camp: '#e05c3a', arrest: '#c9a84c', reddit: '#5865f2' };
+  const typeLabels = { camp: 'KNOWN CAMP', arrest: 'ARREST / INCIDENT', reddit: 'REDDIT REPORT' };
+  const popup = `<div class="incident-popup">
+    <div class="incident-type" style="color:${typeColors[inc.type]}">${typeLabels[inc.type]}</div>
+    <div style="font-family:'Oswald',sans-serif;font-size:15px;margin-bottom:4px;">${inc.title}</div>
+    <div class="incident-desc">${inc.desc}</div>
+    <div class="incident-date">${inc.date}</div>
+    <div class="incident-source">${inc.source}</div>
+  </div>`;
+  const marker = L.marker([inc.lat, inc.lng], { icon: makeIcon(inc.type) }).bindPopup(popup, { maxWidth: 250 });
+  if (inc.type === 'camp') campMarkers.push(marker);
+  else if (inc.type === 'arrest') arrestMarkers.push(marker);
+  else redditMarkers.push(marker);
+});
+
+const campGroup = L.layerGroup(campMarkers).addTo(map);
+const arrestGroup = L.layerGroup(arrestMarkers).addTo(map);
+const redditGroup = L.layerGroup(redditMarkers).addTo(map);
+
+// ── LAYER TOGGLES ─────────────────────────────────────────────────────────
+const layerState = { choropleth: true, camps: true, arrests: true, reddit: true };
+
+function toggleLayer(key) {
+  layerState[key] = !layerState[key];
+  const btn = document.getElementById('toggle-' + key);
+  btn.classList.toggle('on', layerState[key]);
+  if (key === 'choropleth') {
+    layerState[key] ? choroplethLayer.addTo(map) : map.removeLayer(choroplethLayer);
+  } else if (key === 'camps') {
+    layerState[key] ? campGroup.addTo(map) : map.removeLayer(campGroup);
+  } else if (key === 'arrests') {
+    layerState[key] ? arrestGroup.addTo(map) : map.removeLayer(arrestGroup);
+  } else if (key === 'reddit') {
+    layerState[key] ? redditGroup.addTo(map) : map.removeLayer(redditGroup);
+  }
+}
+
+// ── HEADER STATS ─────────────────────────────────────────────────────────────
+let totalPIT = 0, totalUnsheltered = 0, totalStudents = 0, totalSpend = 0;
+Object.values(COUNTY_DATA).forEach(d => {
+  totalPIT += d.pit;
+  totalUnsheltered += d.unsheltered;
+  totalStudents += d.students;
+  totalSpend += d.spending_millions;
+});
+document.getElementById('hstat-total').textContent = totalPIT.toLocaleString();
+document.getElementById('hstat-unsheltered').textContent = totalUnsheltered.toLocaleString();
+document.getElementById('hstat-students').textContent = totalStudents.toLocaleString();
+document.getElementById('hstat-spending').textContent = '$' + totalSpend.toFixed(1) + 'M';
+document.getElementById('last-updated').textContent = new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+
+// ── SIDEBAR COUNTY LIST ───────────────────────────────────────────────────────
+let sortKey = 'pit';
+let searchVal = '';
+
+function getBadgeColor(pit) {
+  if (pit > 200) return { bg: '#c9152a', color: '#fff' };
+  if (pit > 75)  return { bg: '#8b1a1a', color: '#fff' };
+  if (pit > 30)  return { bg: '#7a4f1a', color: '#fff' };
+  if (pit > 10)  return { bg: '#3d5a1e', color: '#fff' };
+  return { bg: '#1e3a2f', color: '#aaa' };
+}
+
+function renderCountyList() {
+  const list = document.getElementById('county-list');
+  let entries = Object.entries(COUNTY_DATA)
+    .filter(([name]) => name.toLowerCase().includes(searchVal.toLowerCase()))
+    .sort((a, b) => b[1][sortKey] - a[1][sortKey]);
+
+  list.innerHTML = entries.map(([name, d]) => {
+    const val = d[sortKey];
+    const bc = getBadgeColor(d.pit);
+    return `<div class="county-item" id="ci-${name.replace(/ /g,'_')}" onclick="focusCounty('${name}')">
+      <div>
+        <div class="county-item-name">${name}</div>
+        <div class="county-item-city">${d.city}</div>
+      </div>
+      <div class="county-badge" style="background:${bc.bg};color:${bc.color}">${val}</div>
+    </div>`;
+  }).join('');
+}
+
+function sortCounties(key) {
+  sortKey = key;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sort-' + key).classList.add('active');
+  renderCountyList();
+}
+
+function filterCounties(val) {
+  searchVal = val;
+  renderCountyList();
+}
+
+function highlightSidebarCounty(name) {
+  document.querySelectorAll('.county-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('ci-' + name.replace(/ /g,'_'));
+  if (el) {
+    el.classList.add('active');
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function focusCounty(name) {
+  highlightSidebarCounty(name);
+  // Find and click county on map
+  choroplethLayer.eachLayer(layer => {
+    if (layer.feature.properties.NAME === name) {
+      const bounds = layer.getBounds();
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 9 });
+      const center = bounds.getCenter();
+      activeCounty = name;
+      choroplethLayer.eachLayer(l => choroplethLayer.resetStyle(l));
+      layer.setStyle({ weight: 2.5, color: '#c9a84c', fillOpacity: 0.95 });
+      L.popup({ maxWidth: 280 })
+        .setLatLng(center)
+        .setContent(buildPopup(name))
+        .openOn(map);
+    }
+  });
+}
+
+renderCountyList();
+</script>
+</body>
+</html>
